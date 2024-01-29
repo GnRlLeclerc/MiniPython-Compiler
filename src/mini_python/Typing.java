@@ -1,6 +1,6 @@
 package mini_python;
 
-import java.util.LinkedList;
+import java.util.HashMap;
 
 class Typing {
 
@@ -12,9 +12,24 @@ class Typing {
 	}
 
 	static TFile file(File f) {
-		for (Def d: f.l)
+		for (Def d : f.l)
 			Typer.functions.put(d.f.id, d);
-		f.s.accept(new Typer());
+
+		// Visit the main function. We will keep the local variables of main() as global variables
+		Typer mainTyper = new Typer();
+		f.s.accept(mainTyper);
+
+		// Visit all other functions
+		for (Def d : f.l) {
+			Typer typer = new Typer();
+			// Create a copy instead of using the same
+			typer.vars = new HashMap<>(mainTyper.vars);
+
+			// Accept this function and add it to the function list
+			d.s.accept(typer);
+		}
+
+
 		// for (Def def : f.l) {
 		// 	LinkedList<Variable> params = new LinkedList<Variable>();
 		// 	for (Ident i : def.l) {
