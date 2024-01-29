@@ -10,8 +10,8 @@ class Typing {
 	}
 
 	static TFile file(File f) {
-		error(null, "TODO");
-		return null;
+		Typer typer = new Typer();
+		return Typer.tFile;
 	}
 
 }
