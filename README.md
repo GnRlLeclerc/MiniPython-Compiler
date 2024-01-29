@@ -25,7 +25,7 @@ Tests are cumulative, i.e.,
 A script `test` is provided to run your compiler on those tests.
 Use
 
-    test -2 path-to-your-compiler
+    ./test.bash -2 "java -cp lib/java-cup-11a-runtime.jar:bin mini_python.Main"
 
 to run the type checking tests. Your compiler is called with command
 line option `--type-only` and the filename, and the exit code is used
@@ -33,7 +33,7 @@ to figure out the behavior of your compiler.
 
 Use
 
-    test -3 path-to-your-compiler
+    ./test.bash -2 "java -cp lib/java-cup-11a-runtime.jar:bin mini_python.Main"
 
 to run the code generation tests. Your compiler is called with the
 filename, the generated code is then compiled with `gcc`, the

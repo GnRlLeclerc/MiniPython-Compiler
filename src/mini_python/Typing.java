@@ -28,7 +28,7 @@ class Typing {
 		Typer mainTyper = new Typer();
 		f.s.accept(mainTyper);
 		LinkedList<Variable> mainParams = new LinkedList<Variable>();
-		Function mainFunc = new Function("main", mainParams);
+		Function mainFunc = new Function("", mainParams);
 		TDef mainTDef = new TDef(mainFunc, mainTyper.currStmt);
 
 		// Add the main function to the function list

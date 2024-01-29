@@ -17,7 +17,7 @@ class Typer implements Visitor {
     // functions definitions (functions are global, hence `static`)
     static HashMap<String, Def> functions = new HashMap<>();
     static {
-        functions.put("main", null);
+        functions.put("list", null);
         functions.put("len", null);
         functions.put("range", null);
     }
