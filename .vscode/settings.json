@@ -1,0 +1,7 @@
+{
+  "java.format.enabled": true,
+  "java.format.settings.url": "./format.xml",
+  "[java]": {
+    "editor.defaultFormatter": "redhat.java"
+  }
+}
