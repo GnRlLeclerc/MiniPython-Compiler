@@ -15,8 +15,13 @@ class Typing {
 	static TFile file(File f) {
 		TFile tFile = new TFile();
 
-		for (Def d : f.l)
+		for (Def d : f.l) {
+			// Check if the function is already defined
+			if (Typer.functions.containsKey(d.f.id)) {
+				error(d.f.loc, "Function " + d.f.id + " is already defined");
+			}
 			Typer.functions.put(d.f.id, d);
+		}
 
 		// Visit the main function. We will keep the local variables of main() as global
 		// variables
