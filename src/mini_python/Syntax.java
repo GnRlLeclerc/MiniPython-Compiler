@@ -7,7 +7,9 @@ import java.util.LinkedList;
 /* Parsed trees.
    This is the output of the parser and the input of the type checker. */
 
-enum Unop {Uneg, Unot}
+enum Unop {
+	Uneg, Unot
+}
 
 enum Binop {
 	Badd, Bsub, Bmul, Bdiv, Bmod,
@@ -429,8 +431,10 @@ class Sset extends Stmt {
 	}
 }
 
-/* visitor for the parsed trees
-   (feel free to modify it for your needs) */
+/*
+ * visitor for the parsed trees
+ * (feel free to modify it for your needs)
+ */
 
 class Def {
 	final Ident f;
@@ -445,17 +449,18 @@ class Def {
 	}
 }
 
-/* Typed trees.
-
-   This is the output of the type checker and the input of the code
-   generation.
-
-   In the typed trees, identifiers (objects of class `Ident`) are
-   now turned into objects of class `Variable` or `Function`.
-
-   There is also a new class `TErange` for the Python expression
-   `list(range(e))`.
-*/
+/*
+ * Typed trees.
+ * 
+ * This is the output of the type checker and the input of the code
+ * generation.
+ * 
+ * In the typed trees, identifiers (objects of class `Ident`) are
+ * now turned into objects of class `Variable` or `Function`.
+ * 
+ * There is also a new class `TErange` for the Python expression
+ * `list(range(e))`.
+ */
 
 class File {
 	final LinkedList<Def> l;
@@ -468,13 +473,15 @@ class File {
 	}
 }
 
-/* In the typed trees, all the occurrences of the same variable
-   point to a single object of the following class. */
+/*
+ * In the typed trees, all the occurrences of the same variable
+ * point to a single object of the following class.
+ */
 class Variable {
 	private static int id = 0;
 	final String name; // for debugging purposes
-	int uid;           // unique id, for debugging purposes
-	int ofs;           // position wrt %rbp
+	int uid; // unique id, for debugging purposes
+	int ofs; // position wrt %rbp
 
 	private Variable(String name, int uid) {
 		this.name = name;
@@ -487,8 +494,10 @@ class Variable {
 	}
 }
 
-/* Similarly, all the occurrences of a given function all point
-   to a single object of the following class. */
+/*
+ * Similarly, all the occurrences of a given function all point
+ * to a single object of the following class.
+ */
 class Function {
 	final String name;
 	final LinkedList<Variable> params;
@@ -737,7 +746,6 @@ class TSeval extends TStmt {
 	}
 }
 
-
 /* function definition */
 
 class TSset extends TStmt {
@@ -767,8 +775,10 @@ class TDef {
 	}
 }
 
-/* visitor for the typed trees
-   (feel free to modify it for your needs) */
+/*
+ * visitor for the typed trees
+ * (feel free to modify it for your needs)
+ */
 
 class TFile {
 	final LinkedList<TDef> l;

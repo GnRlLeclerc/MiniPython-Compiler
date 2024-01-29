@@ -6,8 +6,7 @@
 
 package mini_python;
 
-import java_cup.runtime.*;
-import java.util.*;
+import java.util.LinkedList;
 
 /** CUP v0.11a beta 20060608 generated parser.
   * @version Fri Jan 05 15:06:54 CET 2024

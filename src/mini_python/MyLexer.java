@@ -1,11 +1,11 @@
 package mini_python;
 
-import java_cup.runtime.Symbol;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.util.LinkedList;
 import java.util.Queue;
+
+import java_cup.runtime.Symbol;
 
 public class MyLexer extends Lexer {
 
