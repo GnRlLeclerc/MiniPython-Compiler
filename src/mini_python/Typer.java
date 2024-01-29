@@ -13,7 +13,7 @@ class Todo extends Error {
 }
 
 /* The typer starts here */
-class Typer implements TVisitor {
+class Typer implements Visitor {
 
     // interpreting constants is immediate
     public void visit(Cnone c) {
@@ -33,98 +33,93 @@ class Typer implements TVisitor {
     }
 
     // local variables
-    HashSet<String> vars;
+    HashMap<String, Variable> vars;
 
     Typer() {
-        this.vars = new HashSet<String>();
+        this.vars = new HashMap<String, Variable>();
     }
 
     // functions definitions (functions are global, hence `static`)
-    static HashMap<String, TDef> functions = new HashMap<String, TDef>();
+    static HashMap<String, Def> functions = new HashMap<String, Def>();
 
     static TFile tFile = new TFile();
 
     // interpreting expressions
 
     @Override
-    public void visit(TEcst e) {
+    public void visit(Ecst e) {
         throw new Todo();
     }
 
     @Override
-    public void visit(TEbinop e) {
+    public void visit(Ebinop e) {
         throw new Todo();
     }
 
     @Override
-    public void visit(TEunop e) {
+    public void visit(Eunop e) {
         throw new Todo();
     }
 
     @Override
-    public void visit(TEident id) {
+    public void visit(Eident id) {
         throw new Todo();
     }
 
     @Override
-    public void visit(TEcall e) {
+    public void visit(Ecall e) {
         throw new Todo();
     }
 
     @Override
-    public void visit(TErange e) {
+    public void visit(Elist e) {
         throw new Todo();
     }
 
     @Override
-    public void visit(TElist e) {
-        throw new Todo();
-    }
-
-    @Override
-    public void visit(TEget e) {
+    public void visit(Eget e) {
         throw new Todo();
     }
 
     // interpreting statements
 
     @Override
-    public void visit(TSeval s) {
+    public void visit(Seval s) {
         throw new Todo();
     }
 
     @Override
-    public void visit(TSprint s) {
+    public void visit(Sprint s) {
         throw new Todo();
     }
 
     @Override
-    public void visit(TSblock s) {
+    public void visit(Sblock s) {
         throw new Todo();
     }
 
     @Override
-    public void visit(TSif s) {
+    public void visit(Sif s) {
         throw new Todo();
     }
 
     @Override
-    public void visit(TSassign s) {
+    public void visit(Sassign s) {
         throw new Todo();
     }
 
     @Override
-    public void visit(TSreturn s) {
+    public void visit(Sreturn s) {
         throw new Todo();
     }
 
     @Override
-    public void visit(TSfor s) {
+    public void visit(Sfor s) {
         throw new Todo();
     }
 
     @Override
-    public void visit(TSset s) {
+    public void visit(Sset s) {
         throw new Todo();
     }
 }
