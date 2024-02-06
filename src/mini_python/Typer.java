@@ -15,14 +15,8 @@ class Todo extends Error {
 /* The typer starts here */
 class Typer implements Visitor {
 
-    public HashMap<String, Function> functions;
-    public HashMap<String, Variable> vars;
-    public TStmt currStmt;
-    private TExpr currExpr;
-
-    Typer() {
-        this.vars = new HashMap<>();
-        this.functions = new HashMap<>();
+    static public HashMap<String, Function> functions = new HashMap<>();
+    {
         LinkedList<Variable> listParams = new LinkedList<>();
         listParams.add(Variable.mkVariable("l"));
         functions.put("list", new Function("list", listParams));
@@ -32,6 +26,14 @@ class Typer implements Visitor {
         LinkedList<Variable> rangeParams = new LinkedList<>();
         rangeParams.add(Variable.mkVariable("n"));
         functions.put("range", new Function("range", rangeParams));
+    }
+
+    public HashMap<String, Variable> vars;
+    public TStmt currStmt;
+    private TExpr currExpr;
+
+    Typer() {
+        this.vars = new HashMap<>();
         this.currStmt = null;
         this.currExpr = null;
     }
