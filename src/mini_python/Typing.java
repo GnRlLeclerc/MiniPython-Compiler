@@ -52,7 +52,7 @@ class Typing {
 			Typer typer = new Typer();
 
 			// Create a copy instead of using the same
-			typer.vars = new HashMap<>(mainTyper.vars);
+			typer.vars = new HashMap<>();
 			Function func = mainTyper.functions.get(def.f.id);
 			for (Variable v : func.params) {
 				typer.vars.put(v.name, v);
