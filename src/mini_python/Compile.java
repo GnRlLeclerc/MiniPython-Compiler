@@ -5,7 +5,10 @@ class Compile {
 	static boolean debug = false;
 
 	static X86_64 file(TFile f) {
-		return null; // TODO
+
+		Compiler compiler = new Compiler();
+
+		return new X86_64();
 	}
 
 }
