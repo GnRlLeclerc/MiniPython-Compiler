@@ -6,10 +6,18 @@ class Compiler implements TVisitor {
 
 	X86_64 x86_64;
 	int cstId = 0;
-	String currCstLabel;
+	String currCstStringLabel;
 
 	Compiler() {
 		this.x86_64 = new X86_64();
+		x86_64.dlabel("true");
+		x86_64.string("True");
+		x86_64.dlabel("false");
+		x86_64.string("False");
+		x86_64.dlabel("none");
+		x86_64.string("None");
+		x86_64.dlabel("newLine");
+		x86_64.string("\n");
 	}
 
 	private String newCstLabel() {
@@ -18,21 +26,31 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(Cnone c) {
-		throw new Todo();
+		this.currCstStringLabel = "none";
+		if (debug) {
+			System.out.println("CNone");
+		}
 	}
 
 	@Override
 	public void visit(Cbool c) {
-		throw new Todo();
+		if (c.b) {
+			this.currCstStringLabel = "true";
+		} else {
+			this.currCstStringLabel = "false";
+		}
+		if (debug) {
+			System.out.println("Cbool: " + c.b);
+		}
 	}
 
 	@Override
 	public void visit(Cstring c) {
-		this.currCstLabel = newCstLabel();
-		x86_64.dlabel(this.currCstLabel);
-		x86_64.data(".string " + '"' + c.s + '"');
+		this.currCstStringLabel = newCstLabel();
+		x86_64.dlabel(this.currCstStringLabel);
+		x86_64.string(c.s);
 		if (debug) {
-			System.out.println("Cstring: " + c.s + " -> " + this.currCstLabel);
+			System.out.println("Cstring: " + c.s + " -> " + this.currCstStringLabel);
 		}
 	}
 
@@ -43,13 +61,18 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TEcst e) {
-		if (e.c instanceof Cstring) {
-			this.visit((Cstring) e.c);
-			x86_64.movq("$" + currCstLabel, "%rdi");
-			x86_64.movq(0, "%rax");
-			x86_64.call("printf");
-		} else {
-			throw new Todo();
+		switch (e.c.getClass().getSimpleName()) {
+			case "Cstring":
+				this.visit((Cstring) e.c);
+				break;
+			case "Cbool":
+				this.visit((Cbool) e.c);
+				break;
+			case "Cnone":
+				this.visit((Cnone) e.c);
+				break;
+			default:
+				throw new Todo();
 		}
 	}
 
@@ -108,10 +131,23 @@ class Compiler implements TVisitor {
 			case "TEcst":
 				TEcst e = (TEcst) s.e;
 				e.accept(this);
+				x86_64.movq("$" + currCstStringLabel, "%rdi");
+				x86_64.movq(0, "%rax");
+				x86_64.subq("$8", "%rsp");
+				x86_64.call("printf");
+				x86_64.addq("$8", "%rsp");
 				break;
 
 			default:
 				throw new Todo();
+		}
+		x86_64.movq("$newLine", "%rdi");
+		x86_64.movq(0, "%rax");
+		x86_64.subq("$8", "%rsp");
+		x86_64.call("printf");
+		x86_64.addq("$8", "%rsp");
+		if (debug) {
+			System.out.println("TSprint -> " + s.e.getClass().getSimpleName());
 		}
 	}
 
