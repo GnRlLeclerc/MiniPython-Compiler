@@ -2,13 +2,14 @@ package mini_python;
 
 class Compile {
 
-	static boolean debug = false;
+	static boolean debug = true;
 
 	static X86_64 file(TFile f) {
-
+		Compiler.debug = debug;
 		Compiler compiler = new Compiler();
+		f.l.getFirst().body.accept(compiler);
 
-		return new X86_64();
+		return compiler.x86_64;
 	}
 
 }
