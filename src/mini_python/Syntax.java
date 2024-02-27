@@ -137,11 +137,18 @@ abstract class Constant {
 	static final Cnone None = new Cnone();
 
 	abstract void accept(Visitor v);
+
+	abstract void accept(TVisitor v);
 }
 
 class Cnone extends Constant {
 	@Override
 	void accept(Visitor v) {
+		v.visit(this);
+	}
+
+	@Override
+	void accept(TVisitor v) {
 		v.visit(this);
 	}
 }
@@ -155,6 +162,11 @@ class Cbool extends Constant {
 
 	@Override
 	void accept(Visitor v) {
+		v.visit(this);
+	}
+
+	@Override
+	void accept(TVisitor v) {
 		v.visit(this);
 	}
 }
@@ -172,6 +184,11 @@ class Cstring extends Constant {
 	void accept(Visitor v) {
 		v.visit(this);
 	}
+
+	@Override
+	void accept(TVisitor v) {
+		v.visit(this);
+	}
 }
 
 class Cint extends Constant {
@@ -183,6 +200,11 @@ class Cint extends Constant {
 
 	@Override
 	void accept(Visitor v) {
+		v.visit(this);
+	}
+
+	@Override
+	void accept(TVisitor v) {
 		v.visit(this);
 	}
 }
@@ -451,13 +473,13 @@ class Def {
 
 /*
  * Typed trees.
- * 
+ *
  * This is the output of the type checker and the input of the code
  * generation.
- * 
+ *
  * In the typed trees, identifiers (objects of class `Ident`) are
  * now turned into objects of class `Variable` or `Function`.
- * 
+ *
  * There is also a new class `TErange` for the Python expression
  * `list(range(e))`.
  */

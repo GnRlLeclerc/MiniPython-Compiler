@@ -34,11 +34,9 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(Cbool c) {
-		if (c.b) {
-			this.currCstStringLabel = "true";
-		} else {
-			this.currCstStringLabel = "false";
-		}
+
+		this.currCstStringLabel = c.b ? "true" : "false";
+
 		if (debug) {
 			System.out.println("Cbool: " + c.b);
 		}
@@ -61,19 +59,7 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TEcst e) {
-		switch (e.c.getClass().getSimpleName()) {
-			case "Cstring":
-				this.visit((Cstring) e.c);
-				break;
-			case "Cbool":
-				this.visit((Cbool) e.c);
-				break;
-			case "Cnone":
-				this.visit((Cnone) e.c);
-				break;
-			default:
-				throw new Todo();
-		}
+		e.c.accept(this);
 	}
 
 	@Override
@@ -127,6 +113,7 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TSprint s) {
+		// TODO: better branching + see how to handle complex prints
 		switch (s.e.getClass().getSimpleName()) {
 			case "TEcst":
 				TEcst e = (TEcst) s.e;

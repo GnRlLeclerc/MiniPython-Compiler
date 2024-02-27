@@ -10,7 +10,7 @@ Run `make` to build the compiler.
 ├── .vscode   # VSCode configuration
 │
 ├── lib       # Library dependencies
-
+│
 ├── src       # Main application folder
 │   └── mini_python      # Main package
 │       │
