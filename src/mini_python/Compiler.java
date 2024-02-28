@@ -84,6 +84,10 @@ class Compiler implements TVisitor {
 	@Override
 	public void visit(TEbinop e) {
 
+		if (debug) {
+			System.out.println("Binop: " + e.op);
+		}
+
 		// 1. Accept the first expression. It will push its result to the stack
 		e.e1.accept(this);
 		// 2. Accept the second expression. It will push its result to the stack
@@ -150,6 +154,10 @@ class Compiler implements TVisitor {
 	@Override
 	public void visit(TEunop e) {
 
+		if (debug) {
+			System.out.println("Unop: " + e.op);
+		}
+
 		// 1. Evaluate the expression. It will push its result to the stack
 		e.e.accept(this);
 
@@ -167,6 +175,11 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TEident e) {
+
+		if (debug) {
+			System.out.println("Variable access: " + e.x.name);
+		}
+
 		// Access a variable value and push it to the stack in order to make it easily available for the next operation
 		// NOTE: we assume that the internal variable's offset in comparison to %rbp has already been set.
 		x86_64.movq(e.x.ofs + "(" + Regs.RBP + ")", Regs.RDI);
@@ -180,6 +193,11 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TEget e) {
+
+		if (debug) {
+			System.out.println("List element access");
+		}
+
 		// 1. Evaluate the list expression address
 		e.e1.accept(this);
 		// 2. Evaluate the index expression
@@ -218,6 +236,10 @@ class Compiler implements TVisitor {
 	@Override
 	public void visit(TSassign s) {
 
+		if (debug) {
+			System.out.println("Variable assignment: " + s.x.name);
+		}
+
 		// 1. Evaluate the value to be stored and push it to the stack
 		s.e.accept(this);
 
@@ -230,6 +252,10 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TSprint s) {
+
+		if (debug) {
+			System.out.println("Print -> " + s.e.getClass().getSimpleName());
+		}
 
 		// 1. Evaluate the value to be printed and push it to the stack
 		s.e.accept(this);
@@ -253,13 +279,15 @@ class Compiler implements TVisitor {
 		// Last: print a newline
 		newline();
 
-		if (debug) {
-			System.out.println("TSprint -> " + s.e.getClass().getSimpleName());
-		}
 	}
 
 	@Override
 	public void visit(TSblock s) {
+
+		if (debug) {
+			System.out.println("Statement block");
+		}
+
 		for (TStmt stmt : s.l) {
 			stmt.accept(this);
 		}
