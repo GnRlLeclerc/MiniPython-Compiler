@@ -101,8 +101,9 @@ interface TVisitor {
 	void visit(TSset s);
 }
 
-/* constants */
-
+/**
+ * Code location in the source file
+ */
 class Location {
 	final int line;
 	final int column;
@@ -118,6 +119,9 @@ class Location {
 	}
 }
 
+/**
+ * Function or variable identifier
+ */
 class Ident {
 	final String id;
 	final Location loc;
@@ -133,6 +137,9 @@ class Ident {
 	}
 }
 
+/**
+ * Constant (string, bool, int...)
+ */
 abstract class Constant {
 	static final Cnone None = new Cnone();
 
@@ -213,6 +220,9 @@ abstract class Expr {
 	abstract void accept(Visitor v);
 }
 
+/**
+ * Constant expressions
+ */
 class Ecst extends Expr {
 	final Constant c;
 
@@ -226,6 +236,9 @@ class Ecst extends Expr {
 	}
 }
 
+/**
+ * Operations with arity 2
+ */
 class Ebinop extends Expr {
 	final Binop op;
 	final Expr e1, e2;
@@ -243,6 +256,9 @@ class Ebinop extends Expr {
 	}
 }
 
+/**
+ * Operations with arity 1
+ */
 class Eunop extends Expr {
 	final Unop op;
 	final Expr e;
@@ -259,6 +275,9 @@ class Eunop extends Expr {
 	}
 }
 
+/**
+ * Access a variable value
+ */
 class Eident extends Expr {
 	final Ident x;
 
@@ -273,6 +292,9 @@ class Eident extends Expr {
 	}
 }
 
+/**
+ * Access a value from a list
+ */
 class Eget extends Expr {
 	final Expr e1, e2;
 
@@ -288,8 +310,10 @@ class Eget extends Expr {
 	}
 }
 
-/* statements */
 
+/**
+ * Call a function
+ */
 class Ecall extends Expr {
 	final Ident f;
 	final LinkedList<Expr> l;
@@ -306,6 +330,9 @@ class Ecall extends Expr {
 	}
 }
 
+/**
+ * Create a list from a list of expressions
+ */
 class Elist extends Expr {
 	final LinkedList<Expr> l;
 
@@ -324,6 +351,10 @@ abstract class Stmt {
 	abstract void accept(Visitor v);
 }
 
+/**
+ * If block.
+ * If (e) { s1 } else { s2 }
+ */
 class Sif extends Stmt {
 	final Expr e;
 	final Stmt s1, s2;
@@ -355,6 +386,9 @@ class Sreturn extends Stmt {
 	}
 }
 
+/**
+ * Assign a value to a variable
+ */
 class Sassign extends Stmt {
 	final Ident x;
 	final Expr e;
@@ -371,6 +405,9 @@ class Sassign extends Stmt {
 	}
 }
 
+/**
+ * Print a value to standard output
+ */
 class Sprint extends Stmt {
 	final Expr e;
 
@@ -385,6 +422,9 @@ class Sprint extends Stmt {
 	}
 }
 
+/**
+ * Block of statements (scope)
+ */
 class Sblock extends Stmt {
 	final LinkedList<Stmt> l;
 
@@ -403,6 +443,10 @@ class Sblock extends Stmt {
 	}
 }
 
+/**
+ * For loop
+ * for (x in e) { s }
+ */
 class Sfor extends Stmt {
 	final Ident x;
 	final Expr e;
@@ -421,8 +465,10 @@ class Sfor extends Stmt {
 	}
 }
 
-/* function definition and file */
 
+/**
+ * Statement that evaluates to a value
+ */
 class Seval extends Stmt {
 	final Expr e;
 
@@ -437,6 +483,9 @@ class Seval extends Stmt {
 	}
 }
 
+/**
+ * Set a value in a list element
+ */
 class Sset extends Stmt {
 	final Expr e1, e2, e3;
 
@@ -458,6 +507,9 @@ class Sset extends Stmt {
  * (feel free to modify it for your needs)
  */
 
+/**
+ * Function definition
+ */
 class Def {
 	final Ident f;
 	final LinkedList<Ident> l; // formal parameters
@@ -534,6 +586,9 @@ abstract class TExpr {
 	abstract void accept(TVisitor v);
 }
 
+/**
+ * Constant expressions
+ */
 class TEcst extends TExpr {
 	final Constant c;
 
@@ -547,6 +602,9 @@ class TEcst extends TExpr {
 	}
 }
 
+/**
+ * Operations with arity 2
+ */
 class TEbinop extends TExpr {
 	final Binop op;
 	final TExpr e1, e2;
@@ -564,6 +622,9 @@ class TEbinop extends TExpr {
 	}
 }
 
+/**
+ * Operations with arity 1
+ */
 class TEunop extends TExpr {
 	final Unop op;
 	final TExpr e;
@@ -580,6 +641,9 @@ class TEunop extends TExpr {
 	}
 }
 
+/**
+ * Access a variable value
+ */
 class TEident extends TExpr {
 	final Variable x;
 
@@ -594,6 +658,9 @@ class TEident extends TExpr {
 	}
 }
 
+/**
+ * Get a value from a list
+ */
 class TEget extends TExpr {
 	final TExpr e1, e2;
 
@@ -609,6 +676,9 @@ class TEget extends TExpr {
 	}
 }
 
+/**
+ * Call a function
+ */
 class TEcall extends TExpr {
 	final Function f;
 	final LinkedList<TExpr> l;
@@ -625,6 +695,9 @@ class TEcall extends TExpr {
 	}
 }
 
+/**
+ * Create a list from a list of expressions
+ */
 class TElist extends TExpr {
 	final LinkedList<TExpr> l;
 
@@ -639,6 +712,9 @@ class TElist extends TExpr {
 	}
 }
 
+/**
+ * Create a list from a range
+ */
 class TErange extends TExpr {
 	final TExpr e;
 
@@ -657,6 +733,10 @@ abstract class TStmt {
 	abstract void accept(TVisitor v);
 }
 
+/**
+ * If block.
+ * If (e) { s1 } else { s2 }
+ */
 class TSif extends TStmt {
 	final TExpr e;
 	final TStmt s1, s2;
@@ -688,6 +768,9 @@ class TSreturn extends TStmt {
 	}
 }
 
+/**
+ * Assign a value to a variable
+ */
 class TSassign extends TStmt {
 	final Variable x;
 	final TExpr e;
@@ -704,6 +787,9 @@ class TSassign extends TStmt {
 	}
 }
 
+/**
+ * Print a value to standard output
+ */
 class TSprint extends TStmt {
 	final TExpr e;
 
@@ -718,6 +804,9 @@ class TSprint extends TStmt {
 	}
 }
 
+/**
+ * Block of statements (scope)
+ */
 class TSblock extends TStmt {
 	final LinkedList<TStmt> l;
 
@@ -736,6 +825,10 @@ class TSblock extends TStmt {
 	}
 }
 
+/**
+ * For loop
+ * for (x in e) { s }
+ */
 class TSfor extends TStmt {
 	final Variable x;
 	final TExpr e;
@@ -754,6 +847,9 @@ class TSfor extends TStmt {
 	}
 }
 
+/**
+ * Statement that evaluates to a value
+ */
 class TSeval extends TStmt {
 	final TExpr e;
 
@@ -768,7 +864,9 @@ class TSeval extends TStmt {
 	}
 }
 
-/* function definition */
+/**
+ * Assign a value to a list element
+ */
 
 class TSset extends TStmt {
 	final TExpr e1, e2, e3;
@@ -776,6 +874,7 @@ class TSset extends TStmt {
 	TSset(TExpr e1, TExpr e2, TExpr e3) {
 		super();
 		this.e1 = e1;
+		/* function definition and file */
 		this.e2 = e2;
 		this.e3 = e3;
 	}
@@ -786,6 +885,9 @@ class TSset extends TStmt {
 	}
 }
 
+/**
+ * Function definition
+ */
 class TDef {
 	final Function f;
 	final TStmt body;
