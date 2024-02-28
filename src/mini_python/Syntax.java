@@ -659,7 +659,8 @@ class TEident extends TExpr {
 }
 
 /**
- * Get a value from a list
+ * Get a value from a list.
+ * e1 is the list expression or variable, and e2 is the index.
  */
 class TEget extends TExpr {
 	final TExpr e1, e2;

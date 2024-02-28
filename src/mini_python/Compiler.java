@@ -8,7 +8,6 @@ class Compiler implements TVisitor {
 
 	X86_64 x86_64;
 	int cstId = 0;
-	String currCstStringLabel;
 
 	Compiler() {
 		this.x86_64 = new X86_64();
@@ -18,8 +17,6 @@ class Compiler implements TVisitor {
 		x86_64.string("False");
 		x86_64.dlabel("none");
 		x86_64.string("None");
-		x86_64.dlabel("newLine");
-		x86_64.string("\n");
 	}
 
 	private String newCstLabel() {
@@ -28,8 +25,6 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(Cnone c) {
-		this.currCstStringLabel = "none";
-
 		// Push 0 to the stack (falsy value)
 		x86_64.movq("$0", Regs.RDI);
 		x86_64.pushq(Regs.RDI);
@@ -42,8 +37,6 @@ class Compiler implements TVisitor {
 	@Override
 	public void visit(Cbool c) {
 
-		this.currCstStringLabel = c.b ? "true" : "false";
-
 		// Push the boolean value on the stack
 		x86_64.movq("$" + (c.b ? 1 : 0), Regs.RDI);
 		x86_64.pushq(Regs.RDI);
@@ -55,16 +48,16 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(Cstring c) {
-		this.currCstStringLabel = newCstLabel();
-		x86_64.dlabel(this.currCstStringLabel);
+		String label = newCstLabel();
+		x86_64.dlabel(label);
 		x86_64.string(c.s);
 
 		// Push the string address on the stack
-		x86_64.movq("$" + this.currCstStringLabel, Regs.RDI);
+		x86_64.movq("$" + label, Regs.RDI);
 		x86_64.pushq(Regs.RDI);
 
 		if (debug) {
-			System.out.println("Cstring: " + c.s + " -> " + this.currCstStringLabel);
+			System.out.println("Cstring: " + c.s + " -> " + label);
 		}
 	}
 
@@ -97,12 +90,12 @@ class Compiler implements TVisitor {
 		e.e2.accept(this);
 
 		// Pop the two results from the stack onto usual registers
-		x86_64.popq(Regs.RDI);
-		x86_64.popq(Regs.RSI);
+		x86_64.popq(Regs.RSI); // %rsi = 2nd value
+		x86_64.popq(Regs.RDI); // %rdi = 1st value
 
 		switch (e.op) {
 			case Beq -> {
-				x86_64.cmpq(Regs.RDI, Regs.RSI); // Compare the 2 values
+				x86_64.cmpq(Regs.RSI, Regs.RDI); // Compare the 2 values
 				x86_64.sete("%cl"); // Set the low byte of register %rcx to 1 if they are equal, 0 else
 				x86_64.movzbq("%cl", Regs.RDI); // Move this byte to %rdi and extend it with zeroes
 			}
@@ -174,7 +167,10 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TEident e) {
-		throw new Todo();
+		// Access a variable value and push it to the stack in order to make it easily available for the next operation
+		// NOTE: we assume that the internal variable's offset in comparison to %rbp has already been set.
+		x86_64.movq(e.x.ofs + "(" + Regs.RBP + ")", Regs.RDI);
+		x86_64.pushq(Regs.RDI);
 	}
 
 	@Override
@@ -184,7 +180,20 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TEget e) {
-		throw new Todo();
+		// 1. Evaluate the list expression address
+		e.e1.accept(this);
+		// 2. Evaluate the index expression
+		e.e2.accept(this);
+
+		// 3. Pop the index and list address from the stack into usual registers
+		x86_64.popq(Regs.RSI); // %rsi = index
+		x86_64.popq(Regs.RDI); // %rdi = list address
+
+		// TODO: how to compare list length ? We need to allocate memory for lists and store their lengths
+
+		// 4. Load the value at the index and push it to the stack
+		x86_64.movq(Regs.RDI, Regs.RDI); // %rdi = list address
+		x86_64.pushq(Regs.RDI);
 	}
 
 	@Override
@@ -208,31 +217,42 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TSassign s) {
-		throw new Todo();
+
+		// 1. Evaluate the value to be stored and push it to the stack
+		s.e.accept(this);
+
+		// 2. Pop the value from the stack into a usual register
+		x86_64.popq(Regs.RDI);
+
+		// 3. Store the value into the variable
+		x86_64.movq(Regs.RDI, s.x.ofs + "(" + Regs.RBP + ")");
 	}
 
 	@Override
 	public void visit(TSprint s) {
-		// TODO: better branching + see how to handle complex prints
-		switch (s.e.getClass().getSimpleName()) {
-			case "TEcst":
-				TEcst e = (TEcst) s.e;
-				e.accept(this);
-				x86_64.movq("$" + currCstStringLabel, "%rdi");
-				x86_64.movq(0, "%rax");
-				x86_64.subq("$8", "%rsp");
-				x86_64.call("printf");
-				x86_64.addq("$8", "%rsp");
-				break;
 
-			default:
-				throw new Todo();
-		}
-		x86_64.movq("$newLine", "%rdi");
-		x86_64.movq(0, "%rax");
-		x86_64.subq("$8", "%rsp");
-		x86_64.call("printf");
-		x86_64.addq("$8", "%rsp");
+		// 1. Evaluate the value to be printed and push it to the stack
+		s.e.accept(this);
+
+		// TODO: we will need some typing analysis to determine what formatted string to use !
+		// If this is a string, we just pushed an address onto the stack.
+		// If it was and integer or a boolean, it would be a simple value that we can print straight away.
+
+		// For now, we will assume that all values are strings. We will need to make a choice between in order to continue
+		// * memory allocated values with the 1st byte being the type (string, int, bool, etc.)
+		// * statically typed values (we need to store the types in TExpr) for which no checks are required.
+
+		// TODO: switch depending on the type, or do dynamic type checks with memory allocated values
+		// 2. Pop the value from the stack into a usual register
+		// Because we assume that the value is a string, we know it is a string address and we can directly put it as 1st argument
+		x86_64.popq(Regs.RDI);
+
+		// Call printf
+		printf();
+
+		// Last: print a newline
+		newline();
+
 		if (debug) {
 			System.out.println("TSprint -> " + s.e.getClass().getSimpleName());
 		}
@@ -258,5 +278,32 @@ class Compiler implements TVisitor {
 	@Override
 	public void visit(TSset s) {
 		throw new Todo();
+	}
+
+	// Helper methods
+
+	/**
+	 * Print a newline to standard output
+	 */
+	public void newline() {
+		// Align stack to 16 bytes using a greedy method (sure to work, but this will "allocate" empty space on the stack)
+		x86_64.andq("$-16", Regs.RSP);
+
+		x86_64.movq("$10", Regs.RDI); // 10 is the code for '\n'
+		x86_64.call("putchar");
+	}
+
+	/**
+	 * Printf wrapper to align the stack and zero rax
+	 */
+	public void printf() {
+		// Zero %rax
+		x86_64.xorq(Regs.RAX, Regs.RAX);
+
+		// Align the stack with a greedy method
+		x86_64.andq("$-16", Regs.RSP);
+
+		// Call printf
+		x86_64.call("printf");
 	}
 }
