@@ -29,6 +29,11 @@ class Compiler implements TVisitor {
 	@Override
 	public void visit(Cnone c) {
 		this.currCstStringLabel = "none";
+
+		// Push 0 to the stack (falsy value)
+		x86_64.movq("$0", Regs.RDI);
+		x86_64.pushq(Regs.RDI);
+
 		if (debug) {
 			System.out.println("CNone");
 		}
@@ -38,6 +43,10 @@ class Compiler implements TVisitor {
 	public void visit(Cbool c) {
 
 		this.currCstStringLabel = c.b ? "true" : "false";
+
+		// Push the boolean value on the stack
+		x86_64.movq("$" + (c.b ? 1 : 0), Regs.RDI);
+		x86_64.pushq(Regs.RDI);
 
 		if (debug) {
 			System.out.println("Cbool: " + c.b);
@@ -49,6 +58,11 @@ class Compiler implements TVisitor {
 		this.currCstStringLabel = newCstLabel();
 		x86_64.dlabel(this.currCstStringLabel);
 		x86_64.string(c.s);
+
+		// Push the string address on the stack
+		x86_64.movq("$" + this.currCstStringLabel, Regs.RDI);
+		x86_64.pushq(Regs.RDI);
+
 		if (debug) {
 			System.out.println("Cstring: " + c.s + " -> " + this.currCstStringLabel);
 		}
@@ -56,9 +70,19 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(Cint c) {
-		throw new Todo();
+
+		// Directly push the integer value on the stack
+		x86_64.movq("$" + c.i, Regs.RDI);
+		x86_64.pushq(Regs.RDI);
+
+		if (debug) {
+			System.out.println("Cint: " + c.i);
+		}
 	}
 
+	/**
+	 * Visit a constant. This method redirects to the specific Constant visit methods
+	 */
 	@Override
 	public void visit(TEcst e) {
 		e.c.accept(this);
@@ -132,7 +156,20 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TEunop e) {
-		throw new Todo();
+
+		// 1. Evaluate the expression. It will push its result to the stack
+		e.e.accept(this);
+
+		// 2. Pop the result from the stack onto a usual register
+		x86_64.popq(Regs.RDI);
+
+		switch (e.op) {
+			case Uneg -> x86_64.negq(Regs.RDI); // %rdi = -%rdi
+			case Unot -> x86_64.notq(Regs.RDI); // %rdi = !%rdi
+		}
+
+		// Finally: push the result to the stack
+		x86_64.pushq(Regs.RDI);
 	}
 
 	@Override
