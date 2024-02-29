@@ -1,8 +1,9 @@
 package mini_python;
 
+import mini_python.typing.Type;
+
 import java.io.Serial;
-import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.*;
 
 // the following exception is used whenever you have to implement something
 class Todo extends Error {
@@ -31,11 +32,15 @@ class Typer implements Visitor {
 		functions.put("range", new Function("range", rangeParams));
 	}
 
+	// Store locally defined variables
 	public HashMap<String, Variable> vars;
+
+	// Store the return instructions of a function in order to determine its return type
+	public ArrayList<TSreturn> returns = new ArrayList<>();
 	public TStmt currStmt;
 	private TExpr currExpr;
 
-	Typer() {
+	public Typer() {
 		this.vars = new HashMap<>();
 		this.currStmt = null;
 		this.currExpr = null;
@@ -179,7 +184,10 @@ class Typer implements Visitor {
 	@Override
 	public void visit(Sreturn s) {
 		s.e.accept(this);
-		this.currStmt = new TSreturn(this.currExpr);
+		TSreturn tsreturn = new TSreturn(this.currExpr);
+
+		this.returns.add(tsreturn); // Add the return statement to the list of returns
+		this.currStmt = tsreturn;
 	}
 
 	@Override
@@ -200,5 +208,41 @@ class Typer implements Visitor {
 		s.e3.accept(this);
 		TExpr e3 = this.currExpr;
 		this.currStmt = new TSset(e1, e2, e3);
+	}
+
+	/**
+	 * Helper function to compute the output type of a function from the stored return statements.
+	 * This function never returns null and defaults to NoneType
+	 */
+	public Type currentReturnType() {
+
+		Set<Type> types = new HashSet<>();
+
+		for (TSreturn tsreturn : this.returns) {
+			types.add(tsreturn.returnType);
+		}
+
+		// If there is only one type, return it
+		if (types.size() == 1) {
+			return types.iterator().next();
+		}
+
+		// If there are multiple types, return dynamic. Even if types BOOL and INT64 are returned, we do not coerce them.
+		if (types.size() > 1) {
+			return Type.DYNAMIC;
+		}
+
+		// By default (0 types), return NoneType
+		return Type.NONETYPE;
+	}
+
+	/**
+	 * Sets the "returnType" member of all current TSreturn statements to the given type.
+	 * Call this function after having finished to parse a function, and determined its actual return type.
+	 */
+	public void setReturnTypes(Type type) {
+		for (TSreturn tsreturn : this.returns) {
+			tsreturn.returnType = type;
+		}
 	}
 }
