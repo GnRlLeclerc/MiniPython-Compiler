@@ -6,9 +6,12 @@ import mini_python.typing.Type;
 class Compiler implements TVisitor {
 
 	static boolean debug = false;
-
 	X86_64 x86_64;
 	int cstId = 0;
+	// Store the state of the stack alignment. When using a popq or pushq instruction, increment or decrement this value.
+	// It will be used to align the stack to 16 bytes when doing system calls.
+	// It indicates a byte count and is always positive
+	private int stackAlignOffset = 0;
 
 	Compiler() {
 		this.x86_64 = new X86_64();
@@ -27,6 +30,77 @@ class Compiler implements TVisitor {
 		x86_64.string("%ld");
 	}
 
+	/**
+	 * Align the stack to 16 bytes by allocating enough space given the current stack alignment offset
+	 */
+	private void alignStack() {
+		stackAlignOffset = stackAlignOffset % 16;
+		if (stackAlignOffset == 0) {
+			return; // No need to align the stack
+		}
+
+		x86_64.subq("$" + (16 - stackAlignOffset), Regs.RSP);
+	}
+
+	/**
+	 * Unalign the stack and restore its current offset
+	 */
+	private void unalignStack() {
+		if (stackAlignOffset == 0) {
+			return; // No need to unalign the stack
+		}
+
+		// Unalign the stack to its original offset
+		x86_64.addq("$" + (16 - stackAlignOffset), Regs.RSP);
+	}
+
+	/**
+	 * Print a newline to standard output
+	 */
+	public void newline() {
+		alignStack();
+
+		x86_64.movq("$10", Regs.RDI); // 10 is the code for '\n'
+		x86_64.call("putchar");
+
+		unalignStack();
+	}
+
+	/**
+	 * Printf wrapper to align the stack and zero rax
+	 */
+	public void printf() {
+		// Zero %rax
+		x86_64.xorq(Regs.RAX, Regs.RAX);
+
+		alignStack();
+
+		// Call printf
+		x86_64.call("printf");
+
+		unalignStack();
+	}
+
+	/**
+	 * Printf wrapper that also prints a newline
+	 */
+	public void printfln() {
+
+		// Zero %rax
+		x86_64.xorq(Regs.RAX, Regs.RAX);
+
+		alignStack();
+
+		// Call printf
+		x86_64.call("printf");
+
+		// Call putchar
+		x86_64.movq("$10", Regs.RDI); // 10 is the code for '\n'
+		x86_64.call("putchar");
+
+		unalignStack();
+	}
+
 	private String newCstLabel() {
 		return "cst" + this.cstId++;
 	}
@@ -36,6 +110,7 @@ class Compiler implements TVisitor {
 		// Push 0 to the stack (falsy value)
 		x86_64.movq("$0", Regs.RDI);
 		x86_64.pushq(Regs.RDI);
+		stackAlignOffset += 1; // 1 pushed value
 
 		if (debug) {
 			System.out.println("CNone");
@@ -48,6 +123,7 @@ class Compiler implements TVisitor {
 		// Push the boolean value on the stack
 		x86_64.movq("$" + (c.b ? 1 : 0), Regs.RDI);
 		x86_64.pushq(Regs.RDI);
+		stackAlignOffset += 1; // 1 pushed value
 
 		if (debug) {
 			System.out.println("Cbool: " + c.b);
@@ -63,6 +139,7 @@ class Compiler implements TVisitor {
 		// Push the string address on the stack
 		x86_64.movq("$" + label, Regs.RDI);
 		x86_64.pushq(Regs.RDI);
+		stackAlignOffset += 1; // 1 pushed value
 
 		if (debug) {
 			System.out.println("Cstring: " + c.s + " -> " + label);
@@ -75,6 +152,7 @@ class Compiler implements TVisitor {
 		// Directly push the integer value on the stack
 		x86_64.movq("$" + c.i, Regs.RDI);
 		x86_64.pushq(Regs.RDI);
+		stackAlignOffset += 1; // 1 pushed value
 
 		if (debug) {
 			System.out.println("Cint: " + c.i);
@@ -104,6 +182,7 @@ class Compiler implements TVisitor {
 		// Pop the two results from the stack onto usual registers
 		x86_64.popq(Regs.RSI); // %rsi = 2nd value
 		x86_64.popq(Regs.RDI); // %rdi = 1st value
+		stackAlignOffset -= 2; // 2 popped values
 
 		switch (e.op) {
 			case Beq -> {
@@ -157,6 +236,7 @@ class Compiler implements TVisitor {
 
 		// Finally: push the result to the stack
 		x86_64.pushq(Regs.RDI);
+		stackAlignOffset += 1; // 1 pushed value
 	}
 
 	@Override
@@ -179,6 +259,7 @@ class Compiler implements TVisitor {
 
 		// Finally: push the result to the stack
 		x86_64.pushq(Regs.RDI);
+		// We popped and then pushed the same value, so the stack offset remains the same
 	}
 
 	@Override
@@ -192,6 +273,7 @@ class Compiler implements TVisitor {
 		// NOTE: we assume that the internal variable's offset in comparison to %rbp has already been set.
 		x86_64.movq(e.x.ofs + "(" + Regs.RBP + ")", Regs.RDI);
 		x86_64.pushq(Regs.RDI);
+		stackAlignOffset += 1; // 1 pushed value
 	}
 
 	@Override
@@ -214,12 +296,14 @@ class Compiler implements TVisitor {
 		// 3. Pop the index and list address from the stack into usual registers
 		x86_64.popq(Regs.RSI); // %rsi = index
 		x86_64.popq(Regs.RDI); // %rdi = list address
+		stackAlignOffset -= 2; // 2 popped values
 
 		// TODO: how to compare list length ? We need to allocate memory for lists and store their lengths
 
 		// 4. Load the value at the index and push it to the stack
 		x86_64.movq(Regs.RDI, Regs.RDI); // %rdi = list address
 		x86_64.pushq(Regs.RDI);
+		stackAlignOffset += 1; // 1 pushed value
 	}
 
 	@Override
@@ -253,6 +337,7 @@ class Compiler implements TVisitor {
 
 		// 2. Pop the value from the stack into a usual register
 		x86_64.popq(Regs.RDI);
+		stackAlignOffset -= 1; // 1 popped value
 
 		// 3. Store the value into the variable
 		x86_64.movq(Regs.RDI, s.x.ofs + "(" + Regs.RBP + ")");
@@ -269,47 +354,37 @@ class Compiler implements TVisitor {
 		s.e.accept(this);
 
 		switch (s.e.getType()) {
-			case Type.STRING -> x86_64.popq(Regs.RDI); // %rdi = string address
+			case Type.STRING -> {
+				x86_64.popq(Regs.RDI); // %rdi = string address
+				stackAlignOffset -= 1; // 1 popped value
+				printfln(); // Call printfln
+			}
 			case Type.INT64 -> {
 				x86_64.movq("$int64", Regs.RDI); // %rdi = format string for ints
 				x86_64.popq(Regs.RSI); // %rsi = int value
+				stackAlignOffset -= 1; // 1 popped value
+				printfln(); // Call printfln
+
 			}
 			case Type.NONETYPE -> {
 				x86_64.movq("$none", Regs.RDI); // %rdi = format string for None
 				x86_64.popq(Regs.RSI); // %rsi = None value. This is useless, but we still need to pop it from the stack
+				stackAlignOffset -= 1; // 1 popped value
+				printfln(); // Call printfln
 			}
 			case Type.BOOL -> {
-				x86_64.popq(Regs.RSI); // %rsi = bool value (0 or 1)
-
-				// Compare the value to 0
-				x86_64.cmpq("$0", Regs.RSI);
-				x86_64.je("jmpfalse"); // If it is 0, jump to the "false" label
-
-				// Print True
-				// TODO: these label need to be unique ! A solution would be to create a function "printbool",
-				// and we could call is with the certainty that the "true" and "false" labels are unique there
-				x86_64.movq("$true", Regs.RDI); // %rdi = format string for bools
-				x86_64.jmp("endprintbool");
-
-				// Print false
-				x86_64.label("jmpfalse");
-				x86_64.movq("$false", Regs.RDI); // %rdi = format string for bools
-
-				x86_64.label("endprintbool");
+				x86_64.popq(Regs.RDI); // %rdi = bool value, as the first argument
+				stackAlignOffset -= 1; // 1 popped value
+				// Call the print_bool function
+				alignStack();
+				x86_64.call("_print_bool");
+				unalignStack();
 			}
 
 			// TODO: for dynamic types, we will need to check the type at runtime, and call the correct variation of printf
 			// do a wrapper called "dynamicPrintf" in order to isolate this ?
 			default -> throw new Todo();
 		}
-
-
-		// Call printf
-		printf();
-
-		// Last: print a newline
-		newline();
-
 	}
 
 	@Override
@@ -329,6 +404,8 @@ class Compiler implements TVisitor {
 		throw new Todo();
 	}
 
+	// Helper methods
+
 	@Override
 	public void visit(TSeval s) {
 		throw new Todo();
@@ -337,32 +414,5 @@ class Compiler implements TVisitor {
 	@Override
 	public void visit(TSset s) {
 		throw new Todo();
-	}
-
-	// Helper methods
-
-	/**
-	 * Print a newline to standard output
-	 */
-	public void newline() {
-		// Align stack to 16 bytes using a greedy method (sure to work, but this will "allocate" empty space on the stack)
-		x86_64.andq("$-16", Regs.RSP);
-
-		x86_64.movq("$10", Regs.RDI); // 10 is the code for '\n'
-		x86_64.call("putchar");
-	}
-
-	/**
-	 * Printf wrapper to align the stack and zero rax
-	 */
-	public void printf() {
-		// Zero %rax
-		x86_64.xorq(Regs.RAX, Regs.RAX);
-
-		// Align the stack with a greedy method
-		x86_64.andq("$-16", Regs.RSP);
-
-		// Call printf
-		x86_64.call("printf");
 	}
 }

@@ -10,6 +10,7 @@ class Compile {
 		Compiler.debug = debug;
 		Compiler compiler = new Compiler();
 
+
 		// Begin instructions
 		begin(compiler.x86_64);
 
@@ -23,6 +24,10 @@ class Compile {
 
 	static void begin(X86_64 x86_64) {
 		x86_64.globl("main");
+
+		// Register internal functions
+		internalFunctions(x86_64);
+
 		x86_64.label("main");
 	}
 
@@ -30,6 +35,38 @@ class Compile {
 		x86_64.xorq(Regs.RAX, Regs.RAX);
 		x86_64.movq(0, Regs.RDI); // Return code as argument
 		x86_64.call("exit");
+	}
+
+	/**
+	 * Hook to register internal functions used for commodity
+	 */
+	static void internalFunctions(X86_64 x86_64) {
+
+		// Define the print_bool function
+		// This function receives the boolean value as the first argument in %rdi
+		// It assumes that the stack is aligned to 16 bytes
+		x86_64.label("_print_bool");
+
+		// Compare the value to 0
+		x86_64.cmpq("$0", Regs.RDI);
+		x86_64.je("_print_bool_false"); // If it is 0, jump to the "false" label
+
+		// Print True
+		x86_64.movq("$true", Regs.RDI); // %rdi = format string for bools
+		x86_64.jmp("_print_bool_end");
+
+		// Print False
+		x86_64.label("_print_bool_false");
+		x86_64.movq("$false", Regs.RDI); // %rdi = format string for bools
+
+		x86_64.label("_print_bool_end");
+
+		// Call printf and newline
+		x86_64.call("printf");
+		x86_64.movq("$10", Regs.RDI); // 10 is the code for '\n'
+		x86_64.call("putchar");
+
+		x86_64.ret();
 	}
 
 }
