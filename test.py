@@ -1,1 +1,5 @@
-print("awesome!")
+print("Hello World!")
+print(None)
+print(42)
+print(True)
+print(False)
