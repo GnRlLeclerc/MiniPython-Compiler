@@ -653,6 +653,11 @@ class Variable {
 	static Variable mkVariable(String name, Type type) {
 		return new Variable(name, id++, type);
 	}
+
+	@Override
+	public String toString() {
+		return this.name + " : " + this.type;
+	}
 }
 
 /*

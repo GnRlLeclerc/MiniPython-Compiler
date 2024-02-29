@@ -1,6 +1,7 @@
 package mini_python;
 
 import mini_python.registers.Regs;
+import mini_python.typing.Type;
 
 class Compiler implements TVisitor {
 
@@ -11,12 +12,19 @@ class Compiler implements TVisitor {
 
 	Compiler() {
 		this.x86_64 = new X86_64();
+		// Boolean print values
 		x86_64.dlabel("true");
 		x86_64.string("True");
 		x86_64.dlabel("false");
 		x86_64.string("False");
+
+		// None print value
 		x86_64.dlabel("none");
 		x86_64.string("None");
+
+		// Default print format for integers
+		x86_64.dlabel("int64");
+		x86_64.string("%ld");
 	}
 
 	private String newCstLabel() {
@@ -260,18 +268,41 @@ class Compiler implements TVisitor {
 		// 1. Evaluate the value to be printed and push it to the stack
 		s.e.accept(this);
 
-		// TODO: we will need some typing analysis to determine what formatted string to use !
-		// If this is a string, we just pushed an address onto the stack.
-		// If it was and integer or a boolean, it would be a simple value that we can print straight away.
+		switch (s.e.getType()) {
+			case Type.STRING -> x86_64.popq(Regs.RDI); // %rdi = string address
+			case Type.INT64 -> {
+				x86_64.movq("$int64", Regs.RDI); // %rdi = format string for ints
+				x86_64.popq(Regs.RSI); // %rsi = int value
+			}
+			case Type.NONETYPE -> {
+				x86_64.movq("$none", Regs.RDI); // %rdi = format string for None
+				x86_64.popq(Regs.RSI); // %rsi = None value. This is useless, but we still need to pop it from the stack
+			}
+			case Type.BOOL -> {
+				x86_64.popq(Regs.RSI); // %rsi = bool value (0 or 1)
 
-		// For now, we will assume that all values are strings. We will need to make a choice between in order to continue
-		// * memory allocated values with the 1st byte being the type (string, int, bool, etc.)
-		// * statically typed values (we need to store the types in TExpr) for which no checks are required.
+				// Compare the value to 0
+				x86_64.cmpq("$0", Regs.RSI);
+				x86_64.je("jmpfalse"); // If it is 0, jump to the "false" label
 
-		// TODO: switch depending on the type, or do dynamic type checks with memory allocated values
-		// 2. Pop the value from the stack into a usual register
-		// Because we assume that the value is a string, we know it is a string address and we can directly put it as 1st argument
-		x86_64.popq(Regs.RDI);
+				// Print True
+				// TODO: these label need to be unique ! A solution would be to create a function "printbool",
+				// and we could call is with the certainty that the "true" and "false" labels are unique there
+				x86_64.movq("$true", Regs.RDI); // %rdi = format string for bools
+				x86_64.jmp("endprintbool");
+
+				// Print false
+				x86_64.label("jmpfalse");
+				x86_64.movq("$false", Regs.RDI); // %rdi = format string for bools
+
+				x86_64.label("endprintbool");
+			}
+
+			// TODO: for dynamic types, we will need to check the type at runtime, and call the correct variation of printf
+			// do a wrapper called "dynamicPrintf" in order to isolate this ?
+			default -> throw new Todo();
+		}
+
 
 		// Call printf
 		printf();
