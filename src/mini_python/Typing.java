@@ -1,5 +1,7 @@
 package mini_python;
 
+import mini_python.typing.Type;
+
 import java.util.LinkedList;
 
 class Typing {
@@ -32,7 +34,9 @@ class Typing {
 			// Add all function arguments as local variables
 			LinkedList<Variable> params = new LinkedList<Variable>();
 			for (Ident i : d.l) {
-				Variable v = Variable.mkVariable(i.id);
+				Variable v = Variable.mkVariable(i.id, Type.DYNAMIC); // Because we do not use type hinting, arguments are dynamic by default
+				// TODO: we could add type hinting in order to have more efficient statically typed arguments
+
 				if (typer.vars.containsKey(v.name)) {
 					error(i.loc, "Parameter " + v.name + " is already defined");
 				}
@@ -49,7 +53,7 @@ class Typing {
 			d.s.accept(typer);
 			func.returnType = typer.currentReturnType(); // Find out the current return type of the function
 			typer.setReturnTypes(func.returnType); // Set the return type of all return statements
-			
+
 			// Create the typed function definition and add it to the final list of functions.
 			TDef tdef = new TDef(func, typer.currStmt);
 			tFile.l.add(tdef);

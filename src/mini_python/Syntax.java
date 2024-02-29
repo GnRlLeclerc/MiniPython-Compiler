@@ -628,15 +628,30 @@ class Variable {
 	int uid; // unique id, for debugging purposes
 	int ofs; // position wrt %rbp
 
-	private Variable(String name, int uid) {
+	private Variable(String name, int uid, Type type) {
 		this.name = name;
 		this.uid = uid;
 		this.ofs = -1; // will be set later, during code generation
-		this.type = Type.NONETYPE; // Default to NoneType before assignation
+
+		// Default to NoneType
+		if (type == null) {
+			type = Type.NONETYPE;
+		}
+		this.type = type;
 	}
 
+	/**
+	 * Create a new variable with default type NoneType
+	 */
 	static Variable mkVariable(String name) {
-		return new Variable(name, id++);
+		return new Variable(name, id++, Type.DYNAMIC);
+	}
+
+	/**
+	 * Create a new variable with a given type
+	 */
+	static Variable mkVariable(String name, Type type) {
+		return new Variable(name, id++, type);
 	}
 }
 
