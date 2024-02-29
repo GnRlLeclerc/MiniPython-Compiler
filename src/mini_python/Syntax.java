@@ -1,8 +1,8 @@
 package mini_python;
 
-import mini_python.typing.Type;
-
 import java.util.LinkedList;
+
+import mini_python.typing.Type;
 
 /* Abstract Syntax of Mini-Python */
 
@@ -52,11 +52,16 @@ enum Binop {
 
 		// Ordering operations : the types must be coerccible together
 		Type type = type1.coerce(type2);
-		if (type != null && (this == Blt || this == Ble || this == Bgt || this == Bge || this == Badd || this == Bsub)) {
+		if (type != null && (this == Blt || this == Ble || this == Bgt || this == Bge)) {
+			return Type.BOOL;
+		}
+
+		if (type != null && (this == Badd || this == Bsub)) {
 			return type;
 		}
 
-		// NOTE: we do not fully implement all python operations. The following can only be done with int-type operands
+		// NOTE: we do not fully implement all python operations. The following can only
+		// be done with int-type operands
 		if ((type == Type.INT64 || type == Type.BOOL) && (this == Bmul || this == Bdiv || this == Bmod)) {
 			return Type.INT64;
 		}
@@ -380,7 +385,6 @@ class Eget extends Expr {
 	}
 }
 
-
 /**
  * Call a function
  */
@@ -535,7 +539,6 @@ class Sfor extends Stmt {
 	}
 }
 
-
 /**
  * Statement that evaluates to a value
  */
@@ -668,8 +671,10 @@ class Function {
 	final String name;
 	final LinkedList<Variable> params;
 
-	// The return type of a function will be determined after having parsed all of its return statements.
-	// If all types can be cast to one, a static type will be used. Else, the return type will be dynamic.
+	// The return type of a function will be determined after having parsed all of
+	// its return statements.
+	// If all types can be cast to one, a static type will be used. Else, the return
+	// type will be dynamic.
 	public Type returnType;
 
 	Function(String name, LinkedList<Variable> params) {
@@ -881,8 +886,10 @@ class TSreturn extends TStmt {
 	final TExpr e;
 
 	// The default return type is the same as the expression.
-	// However, when a function can return multiple types, we use the "dynamic" type.
-	// In this case, the TSreturn statement will have "dynamic" set as its return type, and will know to convert
+	// However, when a function can return multiple types, we use the "dynamic"
+	// type.
+	// In this case, the TSreturn statement will have "dynamic" set as its return
+	// type, and will know to convert
 	// the original statement type to the dynamic one.
 	public Type returnType;
 
