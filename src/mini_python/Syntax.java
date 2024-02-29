@@ -1,5 +1,7 @@
 package mini_python;
 
+import mini_python.typing.Type;
+
 import java.util.LinkedList;
 
 /* Abstract Syntax of Mini-Python */
@@ -8,13 +10,59 @@ import java.util.LinkedList;
    This is the output of the parser and the input of the type checker. */
 
 enum Unop {
-	Uneg, Unot
+	Uneg, Unot;
+
+	/**
+	 * Given a type, build the resulting type of the operation.
+	 * Returns null if the operation is invalid
+	 */
+	Type coerce(Type type) {
+		if (type == Type.DYNAMIC) {
+			return Type.DYNAMIC;
+		}
+
+		switch (this) {
+			case Uneg:
+				if (type == Type.INT64 || type == Type.BOOL) {
+					return Type.INT64;
+				}
+			case Unot:
+				return Type.BOOL; // All types can be coerced to bool
+		}
+
+		return null; // Default output: coercion failed
+	}
 }
 
 enum Binop {
 	Badd, Bsub, Bmul, Bdiv, Bmod,
 	Beq, Bneq, Blt, Ble, Bgt, Bge,
-	Band, Bor
+	Band, Bor;
+
+	/**
+	 * Given two operand types, return the output type
+	 * Returns null if the operation is invalid
+	 */
+	Type coerce(Type type1, Type type2) {
+
+		// Basic operations or comparisons
+		if (this == Band || this == Bor || this == Beq || this == Bneq) {
+			return Type.BOOL; // All types can be coerced to bool, and these operations return a bool
+		}
+
+		// Ordering operations : the types must be coerccible together
+		Type type = type1.coerce(type2);
+		if (type != null && (this == Blt || this == Ble || this == Bgt || this == Bge || this == Badd || this == Bsub)) {
+			return type;
+		}
+
+		// NOTE: we do not fully implement all python operations. The following can only be done with int-type operands
+		if ((type == Type.INT64 || type == Type.BOOL) && (this == Bmul || this == Bdiv || this == Bmod)) {
+			return Type.INT64;
+		}
+
+		return null; // Default output: coercion failed
+	}
 }
 
 /* unary and binary operators */
@@ -146,6 +194,8 @@ abstract class Constant {
 	abstract void accept(Visitor v);
 
 	abstract void accept(TVisitor v);
+
+	abstract Type getType();
 }
 
 class Cnone extends Constant {
@@ -157,6 +207,11 @@ class Cnone extends Constant {
 	@Override
 	void accept(TVisitor v) {
 		v.visit(this);
+	}
+
+	@Override
+	Type getType() {
+		return Type.NONETYPE;
 	}
 }
 
@@ -175,6 +230,11 @@ class Cbool extends Constant {
 	@Override
 	void accept(TVisitor v) {
 		v.visit(this);
+	}
+
+	@Override
+	Type getType() {
+		return Type.BOOL;
 	}
 }
 
@@ -196,6 +256,11 @@ class Cstring extends Constant {
 	void accept(TVisitor v) {
 		v.visit(this);
 	}
+
+	@Override
+	Type getType() {
+		return Type.STRING;
+	}
 }
 
 class Cint extends Constant {
@@ -213,6 +278,11 @@ class Cint extends Constant {
 	@Override
 	void accept(TVisitor v) {
 		v.visit(this);
+	}
+
+	@Override
+	Type getType() {
+		return Type.INT64;
 	}
 }
 
@@ -554,6 +624,7 @@ class File {
 class Variable {
 	private static int id = 0;
 	final String name; // for debugging purposes
+	public Type type; // The type of a variable can be dynamically set, and can change on reassign.
 	int uid; // unique id, for debugging purposes
 	int ofs; // position wrt %rbp
 
@@ -561,6 +632,7 @@ class Variable {
 		this.name = name;
 		this.uid = uid;
 		this.ofs = -1; // will be set later, during code generation
+		this.type = Type.NONETYPE; // Default to NoneType before assignation
 	}
 
 	static Variable mkVariable(String name) {
@@ -576,14 +648,35 @@ class Function {
 	final String name;
 	final LinkedList<Variable> params;
 
+	// The return type of a function will be determined after having parsed all of its return statements.
+	// If all types can be cast to one, a static type will be used. Else, the return type will be dynamic.
+	public Type returnType;
+
 	Function(String name, LinkedList<Variable> params) {
 		this.name = name;
 		this.params = params;
+		this.returnType = Type.NONETYPE; // By default
 	}
 }
 
+/**
+ * Abstract base class for typed expressions.
+ * As we use static typing, every expression has a type.
+ */
 abstract class TExpr {
+
+	protected final Type type;
+
+	TExpr(Type type) {
+		assert type != null;
+		this.type = type;
+	}
+
 	abstract void accept(TVisitor v);
+
+	Type getType() {
+		return type;
+	}
 }
 
 /**
@@ -593,6 +686,7 @@ class TEcst extends TExpr {
 	final Constant c;
 
 	TEcst(Constant c) {
+		super(c.getType());
 		this.c = c;
 	}
 
@@ -610,10 +704,14 @@ class TEbinop extends TExpr {
 	final TExpr e1, e2;
 
 	TEbinop(Binop op, TExpr e1, TExpr e2) {
-		super();
+		super(op.coerce(e1.getType(), e2.getType()));
 		this.op = op;
 		this.e1 = e1;
 		this.e2 = e2;
+
+		if (this.getType() == null) {
+			throw new Error("Invalid types " + e1.getType() + " and " + e2.getType() + " for operation " + op);
+		}
 	}
 
 	@Override
@@ -630,9 +728,13 @@ class TEunop extends TExpr {
 	final TExpr e;
 
 	TEunop(Unop op, TExpr e) {
-		super();
+		super(op.coerce(e.getType()));
 		this.op = op;
 		this.e = e;
+
+		if (this.getType() == null) {
+			throw new Error("Invalid type " + e.getType() + " for operand " + op);
+		}
 	}
 
 	@Override
@@ -648,7 +750,7 @@ class TEident extends TExpr {
 	final Variable x;
 
 	TEident(Variable x) {
-		super();
+		super(x.type);
 		this.x = x;
 	}
 
@@ -666,7 +768,7 @@ class TEget extends TExpr {
 	final TExpr e1, e2;
 
 	TEget(TExpr e1, TExpr e2) {
-		super();
+		super(Type.DYNAMIC); // List can contain multiple elements
 		this.e1 = e1;
 		this.e2 = e2;
 	}
@@ -685,7 +787,7 @@ class TEcall extends TExpr {
 	final LinkedList<TExpr> l;
 
 	TEcall(Function f, LinkedList<TExpr> l) {
-		super();
+		super(f.returnType);
 		this.f = f;
 		this.l = l;
 	}
@@ -703,7 +805,7 @@ class TElist extends TExpr {
 	final LinkedList<TExpr> l;
 
 	TElist(LinkedList<TExpr> l) {
-		super();
+		super(Type.LIST);
 		this.l = l;
 	}
 
@@ -720,7 +822,7 @@ class TErange extends TExpr {
 	final TExpr e;
 
 	TErange(TExpr e) {
-		super();
+		super(Type.RANGE);
 		this.e = e;
 	}
 
