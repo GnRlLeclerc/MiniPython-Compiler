@@ -35,6 +35,12 @@ make compile
 │   │
 │   └── mini_python      # Main package
 │       │
+│       ├── libc           # Extended libc utilities
+│       │
+│       ├── registers      # Register utilities
+│       │
+│       ├── typing         # Typing utilities
+│       │
 │       ├── Main.java      # Main class (CLI program)
 │       │
 │       ├── Compile.java   # Compilation entrypoint: TFile -> X86_64

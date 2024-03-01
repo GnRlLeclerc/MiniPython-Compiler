@@ -1,5 +1,6 @@
 package mini_python;
 
+import mini_python.libc.ExtendedLibc;
 import mini_python.registers.Regs;
 import mini_python.typing.Type;
 
@@ -16,19 +17,6 @@ class Compiler implements TVisitor {
 
 	Compiler() {
 		this.x86_64 = new X86_64();
-		// Boolean print values
-		x86_64.dlabel("true");
-		x86_64.string("True");
-		x86_64.dlabel("false");
-		x86_64.string("False");
-
-		// None print value
-		x86_64.dlabel("none");
-		x86_64.string("None");
-
-		// Default print format for integers
-		x86_64.dlabel("int64");
-		x86_64.string("%ld");
 	}
 
 	/**
@@ -54,6 +42,15 @@ class Compiler implements TVisitor {
 
 		// Unalign the stack to its original offset
 		x86_64.addq("$" + (16 - stackAlignOffset), Regs.RSP);
+	}
+
+	/**
+	 * Call a function from the extended libc, and handle stack alignment
+	 */
+	private void callExtendedLibc(ExtendedLibc function) {
+		alignStack();
+		x86_64.call(function.getLabel());
+		unalignStack();
 	}
 
 	/**
@@ -377,31 +374,29 @@ class Compiler implements TVisitor {
 
 		switch (s.e.getType()) {
 			case Type.STRING -> {
-				x86_64.popq(Regs.RDI); // %rdi = string address
+				x86_64.popq(Regs.RDI); // %rdi = string address, as the 1st argument
 				stackAlignOffset -= 1; // 1 popped value
-				printfln(); // Call printfln
+
+				callExtendedLibc(ExtendedLibc.PRINTLN_STRING);
 			}
 			case Type.INT64 -> {
-				x86_64.movq("$int64", Regs.RDI); // %rdi = format string for ints
-				x86_64.popq(Regs.RSI); // %rsi = int value
+				x86_64.popq(Regs.RDI); // %rdi = int value, as the 1st argument
 				stackAlignOffset -= 1; // 1 popped value
-				printfln(); // Call printfln
 
+				callExtendedLibc(ExtendedLibc.PRINTLN_INT64);
 			}
 			case Type.NONETYPE -> {
-				x86_64.movq("$none", Regs.RDI); // %rdi = format string for None
 				x86_64.popq(Regs.RSI); // %rsi = None value. This is useless, but we still need to pop it from the
 				// stack
 				stackAlignOffset -= 1; // 1 popped value
-				printfln(); // Call printfln
+
+				callExtendedLibc(ExtendedLibc.PRINTLN_NONE);
 			}
 			case Type.BOOL -> {
 				x86_64.popq(Regs.RDI); // %rdi = bool value, as the first argument
 				stackAlignOffset -= 1; // 1 popped value
-				// Call the print_bool function
-				alignStack();
-				x86_64.call("_print_bool");
-				unalignStack();
+
+				callExtendedLibc(ExtendedLibc.PRINTLN_BOOL);
 			}
 
 			// TODO: for dynamic types, we will need to check the type at runtime, and call
