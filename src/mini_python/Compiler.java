@@ -107,6 +107,37 @@ class Compiler implements TVisitor {
 	// Allocation helpers
 
 	/**
+	 * Allocate a dynamic None value.
+	 * No value is needed, just the tag. The None tag is 0
+	 * This function will put the memory pointer in %rax.
+	 */
+	private void alloc_none() {
+		x86_64.movq(1, Regs.RDI);
+		callExtendedLibc(ExtendedLibc.ALLOC_OR_PANIC);
+
+		// The pointer result is in %rax. We need to put 0 in the first byte
+		x86_64.movq(0, Regs.RDI);
+		x86_64.mov("%dil", "(%rax)"); // See https://stackoverflow.com/a/65527553
+	}
+
+	/**
+	 * Allocate a dynamic bool value.
+	 * The bool byte tag is 0.
+	 * This function will put the memory pointer in %rax.
+	 */
+	private void alloc_bool() {
+
+		// For an bool, we will need 1 byte for the type tag, and 8 bytes for the value (we store them as int64).
+		x86_64.movq(9, Regs.RDI);
+
+		callExtendedLibc(ExtendedLibc.ALLOC_OR_PANIC);
+
+		// The pointer result is in %rax. We need to put 1 in the first byte
+		x86_64.movq(1, Regs.RDI);
+		x86_64.mov("%dil", "(%rax)"); // See https://stackoverflow.com/a/65527553
+	}
+
+	/**
 	 * Allocate a dynamic int64 value.
 	 * The int64 byte tag is 2.
 	 * This function will put the memory pointer in %rax.
@@ -129,6 +160,15 @@ class Compiler implements TVisitor {
 	private void staticToDynamic(Type type) {
 
 		switch (type) {
+			case Type.NONETYPE -> // Allocate memory for the dynamic value
+					alloc_none();
+			case Type.BOOL -> {
+				// Allocate memory for the dynamic value
+				alloc_bool();
+				// Store the static value in the dynamic value, skipping the first tag byte
+				x86_64.popq(Regs.RDI); // Pop the static value from the stack
+				x86_64.movq(Regs.RDI, "1(%rax)");
+			}
 			case Type.INT64 -> {
 				// Allocate memory for the dynamic value
 				alloc_int64();
