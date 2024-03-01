@@ -10,7 +10,9 @@ public enum ExtendedLibc {
 	PRINTLN_INT64("println_int64"),
 	PRINTLN_BOOL("println_bool"),
 	PRINTLN_STRING("println_string"),
-	PRINTLN_NONE("println_none");
+	PRINTLN_NONE("println_none"),
+	ALLOC_OR_PANIC("alloc_or_panic"),
+	PRINTLN_DYNAMIC("println_dynamic");
 
 	private final String label;
 

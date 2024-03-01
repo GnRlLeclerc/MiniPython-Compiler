@@ -13,8 +13,27 @@ public enum Registers {
 		this.code = code;
 	}
 
+	/**
+	 * Get the correct register for the given function argument index
+	 */
+	public static Registers argReg(int index) {
+		return switch (index) {
+			case 0 -> RDI;
+			case 1 -> RSI;
+			case 2 -> RDX;
+			case 3 -> RCX;
+			case 4 -> R8;
+			case 5 -> R9;
+			default -> null;
+		};
+	}
+
 	@Override
 	public String toString() {
+		return code;
+	}
+
+	public String getCode() {
 		return code;
 	}
 }

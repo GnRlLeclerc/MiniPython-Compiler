@@ -683,7 +683,7 @@ class Function {
 	// Stores the byte offset from the base stack frame in order to allocate enough stack space
 	// for all function arguments + all local variables for this function.
 	// This is determined during the type checking phase, where every local variable receives a stack frame offset.
-	protected int localVariablesOffset;
+	protected int localVariablesOffset; // Negative bytes
 
 	Function(String name, LinkedList<Variable> params) {
 		this.name = name;

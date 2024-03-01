@@ -86,6 +86,13 @@ public class X86_64 {
 		return this;
 	}
 
+	/**
+	 * For use with single byte registers !
+	 */
+	X86_64 mov(String op1, String op2) {
+		return emit("mov " + op1 + ", " + op2);
+	}
+
 	X86_64 movq(String op1, String op2) {
 		return emit("movq " + op1 + ", " + op2);
 	}

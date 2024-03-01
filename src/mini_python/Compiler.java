@@ -1,19 +1,23 @@
 package mini_python;
 
 import mini_python.libc.ExtendedLibc;
+import mini_python.registers.Registers;
 import mini_python.registers.Regs;
 import mini_python.typing.Type;
 
 class Compiler implements TVisitor {
 
 	static boolean debug = false;
-	X86_64 x86_64;
-	int cstId = 0;
+	// Reference to the current function being compiled. Used by TSreturn in order to know the size of the local variables
+	// to be cleaned up upon returning.
+	protected TDef currentFunction;
 	// Store the state of the stack alignment. When using a popq or pushq
 	// instruction, increment or decrement this value.
 	// It will be used to align the stack to 16 bytes when doing system calls.
 	// It indicates a byte count and is always positive
-	private int stackAlignOffset = 0;
+	protected int stackAlignOffset = 0;
+	X86_64 x86_64;
+	int cstId = 0;
 
 	Compiler() {
 		this.x86_64 = new X86_64();
@@ -98,6 +102,45 @@ class Compiler implements TVisitor {
 		x86_64.call("putchar");
 
 		unalignStack();
+	}
+
+	// Allocation helpers
+
+	/**
+	 * Allocate a dynamic int64 value.
+	 * The int64 byte tag is 2.
+	 * This function will put the memory pointer in %rax.
+	 */
+	private void alloc_int64() {
+
+		// For an int64, we will need 1 byte for the type tag, and 8 bytes for the value.
+		x86_64.movq(9, Regs.RDI);
+
+		callExtendedLibc(ExtendedLibc.ALLOC_OR_PANIC);
+
+		// The pointer result is in %rax. We need to put 2 in the first byte
+		x86_64.movq(2, Regs.RDI);
+		x86_64.mov("%dil", "(%rax)"); // See https://stackoverflow.com/a/65527553
+	}
+
+	/**
+	 * Helper: convert the stack top value from a static type to a dynamic type
+	 */
+	private void staticToDynamic(Type type) {
+
+		switch (type) {
+			case Type.INT64 -> {
+				// Allocate memory for the dynamic value
+				alloc_int64();
+				// Store the static value in the dynamic value, skipping the first tag byte
+				x86_64.popq(Regs.RDI); // Pop the static value from the stack
+				x86_64.movq(Regs.RDI, "1(%rax)");
+			}
+			default -> throw new Todo("staticToDynamic for static type " + type);
+		}
+
+		// Last: push the newly allocated dynamic value to the stack
+		x86_64.pushq(Regs.RAX);
 	}
 
 	private String newCstLabel() {
@@ -294,7 +337,47 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TEcall e) {
-		throw new Todo("TEcall");
+		// 1. Accept all arguments and push them to the stack in reverse order
+		int currArg = e.l.size() - 1;
+		for (TExpr expr : e.l.reversed()) {
+			expr.accept(this);
+
+			// Convert the argument values from static to dynamic if needed
+			if (expr.type != Type.DYNAMIC && e.f.params.get(currArg).type == Type.DYNAMIC) {
+				// We need to convert the static value to a dynamic one
+				staticToDynamic(expr.type);
+
+			} else if (expr.type == Type.DYNAMIC && e.f.params.get(currArg).type != Type.DYNAMIC) {
+				// We need to convert the dynamic value to a static one
+				// We will pop the dynamic value from the stack and store it in a static variable
+				// Then, we will push the static value to the stack
+				throw new Todo("Dynamic to static conversion");
+			}
+
+			currArg--;
+		}
+		stackAlignOffset += e.l.size(); // e.l.size() pushed values
+
+		// 2. Pass and pop the first 6 arguments using registers
+		int argCount = e.l.size();
+		for (int i = 0; i < Math.min(6, argCount); i++) {
+			x86_64.popq(Registers.argReg(i).getCode());
+			stackAlignOffset -= 1; // 1 popped value
+		}
+
+		// 3. Call the function
+		alignStack();
+		x86_64.call("func_" + e.f.name);
+		unalignStack();
+
+		// 4. Push the returned value to the stack
+		x86_64.pushq(Regs.RAX);
+
+		stackAlignOffset += 1; // 1 pushed value
+
+		if (debug) {
+			System.out.println("Function call: " + e.f.name + " with " + e.l.size() + " argument(s)");
+		}
 	}
 
 	@Override
@@ -339,7 +422,28 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TSreturn s) {
-		throw new Todo("TSreturn");
+
+		// 1. Evaluate the return expression and push it to the stack
+		s.e.accept(this);
+
+		// 2. Pop the return value from the stack into the usual return register
+		x86_64.popq(Regs.RAX);
+
+		// 3. Free the stack allocated memory
+		x86_64.addq("$" + -this.currentFunction.f.localVariablesOffset, Regs.RSP);
+
+		// 4. Restore the stack frame
+		x86_64.popq(Regs.RBP);
+
+		// 5. Return from the function
+		x86_64.ret();
+
+		// We popped the stack frame and freed all the local variables
+		this.stackAlignOffset -= 1 - this.currentFunction.f.localVariablesOffset / 8;
+
+		if (debug) {
+			System.out.println("Return of type " + s.e.getType() + " from function " + currentFunction.f.name);
+		}
 	}
 
 	@Override
@@ -373,7 +477,7 @@ class Compiler implements TVisitor {
 		// 2. Pop the value to the %rdi register in order to pass it as an argument to
 		// the correct extended_libc function for printing
 		x86_64.popq(Regs.RDI); // %rdi = string address or int value, as the 1st argument. If None, this is
-								// useless and won't do any wrong
+		// useless and won't do any wrong
 		stackAlignOffset -= 1; // 1 popped value
 
 		if (debug) {
@@ -389,9 +493,8 @@ class Compiler implements TVisitor {
 
 			case Type.BOOL -> callExtendedLibc(ExtendedLibc.PRINTLN_BOOL);
 
-			// TODO: for dynamic types, we will need to check the type at runtime, and call
-			// the correct variation of printf
-			// do a wrapper called "dynamicPrintf" in order to isolate this ?
+			case Type.DYNAMIC -> callExtendedLibc(ExtendedLibc.PRINTLN_DYNAMIC);
+
 			default -> throw new Todo("TSprint");
 		}
 	}
@@ -417,7 +520,8 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TSeval s) {
-		throw new Todo("TSeval");
+		s.e.accept(this); // Accept the statement expression and push the returned value to the stack
+		x86_64.popq(Regs.RAX); // Immediately pop the value, we will not use it
 	}
 
 	@Override

@@ -54,8 +54,13 @@ class Typing {
 			func.returnType = typer.currentReturnType(); // Find out the current return type of the function
 			typer.setReturnTypes(func.returnType); // Set the return type of all return statements
 
-			// Create the typed function definition and add it to the final list of functions.
-			TDef tdef = new TDef(func, typer.currStmt);
+			// If there is no return statement, add a default return None statement
+			TSblock block = (TSblock) typer.currStmt;
+			if (typer.returns.isEmpty()) {
+				block.l.add(new TSreturn(new TEcst(Constant.None)));
+			}
+
+			TDef tdef = new TDef(func, block);
 			tFile.l.add(tdef);
 		}
 
