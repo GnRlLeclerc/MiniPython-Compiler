@@ -4,17 +4,22 @@ Compiler for a subset of Python made with Java.
 
 Run `make` to build the compiler.
 
-Compile a minipython file with
+Compile a minipython file to assembly with
 
 ```bash
 ./minipython file.py
 ```
 
-You can then compile and execute the generated assembly code using an assembler.
-Example with gcc:
+Compile the `C` code with
 
 ```bash
-gcc -o test test.s -no-pie
+make libc
+```
+
+You can then compile and link with the `C` code, and then execute the generated assembly code using an assembler.
+
+```bash
+make compile
 ./test
 ```
 
@@ -26,6 +31,8 @@ gcc -o test test.s -no-pie
 ├── lib       # Library dependencies
 │
 ├── src       # Main application folder
+│   ├── libc_extended    # C helper functions
+│   │
 │   └── mini_python      # Main package
 │       │
 │       ├── Main.java      # Main class (CLI program)
