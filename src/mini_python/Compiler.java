@@ -272,11 +272,13 @@ class Compiler implements TVisitor {
 	@Override
 	public void visit(TEident e) {
 
-		// Reset the type of this statement to that of the variable, which may have been updated with assignments
+		// Reset the type of this statement to that of the variable, which may have been
+		// updated with assignments
 		e.type = e.x.type;
 
 		if (debug) {
-			System.out.println("Variable access: " + e.x.name + " of type " + e.getType() + " (uid: " + e.x.uid + ")" + " with stack frame offset of " + e.x.ofs + " bytes");
+			System.out.println("Variable access: " + e.x.name + " of type " + e.getType() + " (uid: " + e.x.uid + ")"
+					+ " with stack frame offset of " + e.x.ofs + " bytes");
 		}
 
 		if (e.type == null) {
@@ -344,7 +346,8 @@ class Compiler implements TVisitor {
 	public void visit(TSassign s) {
 
 		if (debug) {
-			System.out.println("Variable assignment: " + s.x.name + " with new type " + s.e.getType() + " (uid: " + s.x.uid + ")" + " with stack frame offset of " + s.x.ofs + " bytes");
+			System.out.println("Variable assignment: " + s.x.name + " with new type " + s.e.getType() + " (uid: "
+					+ s.x.uid + ")" + " with stack frame offset of " + s.x.ofs + " bytes");
 		}
 
 		// 1. Evaluate the value to be stored and push it to the stack
@@ -357,7 +360,6 @@ class Compiler implements TVisitor {
 		// 3. We just assigned a value to the variable: update the type of the variable
 		s.x.type = s.e.getType();
 
-
 		// 4. Store the value into the variable
 		x86_64.movq(Regs.RDI, s.x.ofs + "(" + Regs.RBP + ")");
 	}
@@ -368,36 +370,24 @@ class Compiler implements TVisitor {
 		// 1. Evaluate the value to be printed and push it to the stack
 		s.e.accept(this);
 
+		// 2. Pop the value to the %rdi register in order to pass it as an argument to
+		// the correct extended_libc function for printing
+		x86_64.popq(Regs.RDI); // %rdi = string address or int value, as the 1st argument. If None, this is
+								// useless and won't do any wrong
+		stackAlignOffset -= 1; // 1 popped value
+
 		if (debug) {
 			System.out.println("Print -> " + s.e.getClass().getSimpleName() + " of type " + s.e.getType());
 		}
 
 		switch (s.e.getType()) {
-			case Type.STRING -> {
-				x86_64.popq(Regs.RDI); // %rdi = string address, as the 1st argument
-				stackAlignOffset -= 1; // 1 popped value
+			case Type.STRING -> callExtendedLibc(ExtendedLibc.PRINTLN_STRING);
 
-				callExtendedLibc(ExtendedLibc.PRINTLN_STRING);
-			}
-			case Type.INT64 -> {
-				x86_64.popq(Regs.RDI); // %rdi = int value, as the 1st argument
-				stackAlignOffset -= 1; // 1 popped value
+			case Type.INT64 -> callExtendedLibc(ExtendedLibc.PRINTLN_INT64);
 
-				callExtendedLibc(ExtendedLibc.PRINTLN_INT64);
-			}
-			case Type.NONETYPE -> {
-				x86_64.popq(Regs.RSI); // %rsi = None value. This is useless, but we still need to pop it from the
-				// stack
-				stackAlignOffset -= 1; // 1 popped value
+			case Type.NONETYPE -> callExtendedLibc(ExtendedLibc.PRINTLN_NONE);
 
-				callExtendedLibc(ExtendedLibc.PRINTLN_NONE);
-			}
-			case Type.BOOL -> {
-				x86_64.popq(Regs.RDI); // %rdi = bool value, as the first argument
-				stackAlignOffset -= 1; // 1 popped value
-
-				callExtendedLibc(ExtendedLibc.PRINTLN_BOOL);
-			}
+			case Type.BOOL -> callExtendedLibc(ExtendedLibc.PRINTLN_BOOL);
 
 			// TODO: for dynamic types, we will need to check the type at runtime, and call
 			// the correct variation of printf
