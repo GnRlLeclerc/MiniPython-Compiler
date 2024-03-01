@@ -8,7 +8,8 @@ class Compiler implements TVisitor {
 	static boolean debug = false;
 	X86_64 x86_64;
 	int cstId = 0;
-	// Store the state of the stack alignment. When using a popq or pushq instruction, increment or decrement this value.
+	// Store the state of the stack alignment. When using a popq or pushq
+	// instruction, increment or decrement this value.
 	// It will be used to align the stack to 16 bytes when doing system calls.
 	// It indicates a byte count and is always positive
 	private int stackAlignOffset = 0;
@@ -31,7 +32,8 @@ class Compiler implements TVisitor {
 	}
 
 	/**
-	 * Align the stack to 16 bytes by allocating enough space given the current stack alignment offset
+	 * Align the stack to 16 bytes by allocating enough space given the current
+	 * stack alignment offset
 	 */
 	private void alignStack() {
 		stackAlignOffset = stackAlignOffset % 16;
@@ -160,7 +162,8 @@ class Compiler implements TVisitor {
 	}
 
 	/**
-	 * Visit a constant. This method redirects to the specific Constant visit methods
+	 * Visit a constant. This method redirects to the specific Constant visit
+	 * methods
 	 */
 	@Override
 	public void visit(TEcst e) {
@@ -171,7 +174,7 @@ class Compiler implements TVisitor {
 	public void visit(TEbinop e) {
 
 		if (debug) {
-			System.out.println("Binop: " + e.op);
+			System.out.println("Binop: " + e.op + " " + e.type);
 		}
 
 		// 1. Accept the first expression. It will push its result to the stack
@@ -184,6 +187,8 @@ class Compiler implements TVisitor {
 		x86_64.popq(Regs.RDI); // %rdi = 1st value
 		stackAlignOffset -= 2; // 2 popped values
 
+		// TODO: this implementation only works with integers and boolean. We must
+		// implement it for all types (string, list...)
 		switch (e.op) {
 			case Beq -> {
 				x86_64.cmpq(Regs.RSI, Regs.RDI); // Compare the 2 values
@@ -214,22 +219,26 @@ class Compiler implements TVisitor {
 			}
 			case Blt -> {
 				x86_64.cmpq(Regs.RDI, Regs.RSI); // Compare the 2 values
-				x86_64.setl("%cl"); // Set the low byte of register %rcx to 1 if the first is less than the second, 0 else
+				x86_64.setl("%cl"); // Set the low byte of register %rcx to 1 if the first is less than the second,
+				// 0 else
 				x86_64.movzbq("%cl", Regs.RDI); // Move this byte to %rdi and extend it with zeroes
 			}
 			case Bgt -> {
 				x86_64.cmpq(Regs.RDI, Regs.RSI); // Compare the 2 values
-				x86_64.setg("%cl"); // Set the low byte of register %rcx to 1 if the first is greater than the second, 0 else
+				x86_64.setg("%cl"); // Set the low byte of register %rcx to 1 if the first is greater than the
+				// second, 0 else
 				x86_64.movzbq("%cl", Regs.RDI); // Move this byte to %rdi and extend it with zeroes
 			}
 			case Ble -> {
 				x86_64.cmpq(Regs.RDI, Regs.RSI); // Compare the 2 values
-				x86_64.setle("%cl"); // Set the low byte of register %rcx to 1 if the first is less or equal to the second, 0 else
+				x86_64.setle("%cl"); // Set the low byte of register %rcx to 1 if the first is less or equal to the
+				// second, 0 else
 				x86_64.movzbq("%cl", Regs.RDI); // Move this byte to %rdi and extend it with zeroes
 			}
 			case Bge -> {
 				x86_64.cmpq(Regs.RDI, Regs.RSI); // Compare the 2 values
-				x86_64.setge("%cl"); // Set the low byte of register %rcx to 1 if the first is greater or equal to the second, 0 else
+				x86_64.setge("%cl"); // Set the low byte of register %rcx to 1 if the first is greater or equal to
+				// the second, 0 else
 				x86_64.movzbq("%cl", Regs.RDI); // Move this byte to %rdi and extend it with zeroes
 			}
 		}
@@ -259,18 +268,26 @@ class Compiler implements TVisitor {
 
 		// Finally: push the result to the stack
 		x86_64.pushq(Regs.RDI);
-		// We popped and then pushed the same value, so the stack offset remains the same
+		// We popped and then pushed the same value, so the stack offset remains the
+		// same
 	}
 
 	@Override
 	public void visit(TEident e) {
 
+		// Reset the type of this statement to that of the variable, which may have been updated with assignments
+		e.type = e.x.type;
+
 		if (debug) {
-			System.out.println("Variable access: " + e.x.name);
+			System.out.println("Variable access: " + e.x.name + " of type " + e.getType() + " (uid: " + e.x.uid + ")" + " with stack frame offset of " + e.x.ofs + " bytes");
 		}
 
-		// Access a variable value and push it to the stack in order to make it easily available for the next operation
-		// NOTE: we assume that the internal variable's offset in comparison to %rbp has already been set.
+		if (e.type == null) {
+			throw new Error("Variable " + e.x.name + " is being accessed before assignment");
+		}
+
+		// Access a variable value and push it to the stack in order to make it easily
+		// available for the next operation
 		x86_64.movq(e.x.ofs + "(" + Regs.RBP + ")", Regs.RDI);
 		x86_64.pushq(Regs.RDI);
 		stackAlignOffset += 1; // 1 pushed value
@@ -278,7 +295,7 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TEcall e) {
-		throw new Todo();
+		throw new Todo("TEcall");
 	}
 
 	@Override
@@ -298,7 +315,8 @@ class Compiler implements TVisitor {
 		x86_64.popq(Regs.RDI); // %rdi = list address
 		stackAlignOffset -= 2; // 2 popped values
 
-		// TODO: how to compare list length ? We need to allocate memory for lists and store their lengths
+		// TODO: how to compare list length ? We need to allocate memory for lists and
+		// store their lengths
 
 		// 4. Load the value at the index and push it to the stack
 		x86_64.movq(Regs.RDI, Regs.RDI); // %rdi = list address
@@ -308,7 +326,7 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TElist e) {
-		throw new Todo();
+		throw new Todo("TElist");
 	}
 
 	@Override
@@ -317,19 +335,19 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TSif s) {
-		throw new Todo();
+		throw new Todo("TSif");
 	}
 
 	@Override
 	public void visit(TSreturn s) {
-		throw new Todo();
+		throw new Todo("TSreturn");
 	}
 
 	@Override
 	public void visit(TSassign s) {
 
 		if (debug) {
-			System.out.println("Variable assignment: " + s.x.name);
+			System.out.println("Variable assignment: " + s.x.name + " with new type " + s.e.getType() + " (uid: " + s.x.uid + ")" + " with stack frame offset of " + s.x.ofs + " bytes");
 		}
 
 		// 1. Evaluate the value to be stored and push it to the stack
@@ -339,19 +357,23 @@ class Compiler implements TVisitor {
 		x86_64.popq(Regs.RDI);
 		stackAlignOffset -= 1; // 1 popped value
 
-		// 3. Store the value into the variable
+		// 3. We just assigned a value to the variable: update the type of the variable
+		s.x.type = s.e.getType();
+
+
+		// 4. Store the value into the variable
 		x86_64.movq(Regs.RDI, s.x.ofs + "(" + Regs.RBP + ")");
 	}
 
 	@Override
 	public void visit(TSprint s) {
 
-		if (debug) {
-			System.out.println("Print -> " + s.e.getClass().getSimpleName());
-		}
-
 		// 1. Evaluate the value to be printed and push it to the stack
 		s.e.accept(this);
+
+		if (debug) {
+			System.out.println("Print -> " + s.e.getClass().getSimpleName() + " of type " + s.e.getType());
+		}
 
 		switch (s.e.getType()) {
 			case Type.STRING -> {
@@ -368,7 +390,8 @@ class Compiler implements TVisitor {
 			}
 			case Type.NONETYPE -> {
 				x86_64.movq("$none", Regs.RDI); // %rdi = format string for None
-				x86_64.popq(Regs.RSI); // %rsi = None value. This is useless, but we still need to pop it from the stack
+				x86_64.popq(Regs.RSI); // %rsi = None value. This is useless, but we still need to pop it from the
+				// stack
 				stackAlignOffset -= 1; // 1 popped value
 				printfln(); // Call printfln
 			}
@@ -381,9 +404,10 @@ class Compiler implements TVisitor {
 				unalignStack();
 			}
 
-			// TODO: for dynamic types, we will need to check the type at runtime, and call the correct variation of printf
+			// TODO: for dynamic types, we will need to check the type at runtime, and call
+			// the correct variation of printf
 			// do a wrapper called "dynamicPrintf" in order to isolate this ?
-			default -> throw new Todo();
+			default -> throw new Todo("TSprint");
 		}
 	}
 
@@ -401,18 +425,18 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TSfor s) {
-		throw new Todo();
+		throw new Todo("TSfor");
 	}
 
 	// Helper methods
 
 	@Override
 	public void visit(TSeval s) {
-		throw new Todo();
+		throw new Todo("TSeval");
 	}
 
 	@Override
 	public void visit(TSset s) {
-		throw new Todo();
+		throw new Todo("TSet");
 	}
 }

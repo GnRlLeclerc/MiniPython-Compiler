@@ -1,8 +1,8 @@
 package mini_python;
 
-import java.util.LinkedList;
-
 import mini_python.typing.Type;
+
+import java.util.LinkedList;
 
 /* Abstract Syntax of Mini-Python */
 
@@ -52,12 +52,17 @@ enum Binop {
 
 		// Ordering operations : the types must be coerccible together
 		Type type = type1.coerce(type2);
+		System.out.println("Coercing " + type1 + " and " + type2 + " to " + type + " for operation " + this);
 		if (type != null && (this == Blt || this == Ble || this == Bgt || this == Bge)) {
 			return Type.BOOL;
 		}
 
-		if (type != null && (this == Badd || this == Bsub)) {
+		if (type != null && (this == Badd)) {
 			return type;
+		}
+
+		if ((type == Type.BOOL || type == Type.INT64) && this == Bsub) {
+			return Type.INT64;
 		}
 
 		// NOTE: we do not fully implement all python operations. The following can only
@@ -631,30 +636,28 @@ class Variable {
 	int uid; // unique id, for debugging purposes
 	int ofs; // position wrt %rbp
 
-	private Variable(String name, int uid, Type type) {
+	private Variable(String name, int uid, Type type, int offset) {
 		this.name = name;
 		this.uid = uid;
-		this.ofs = -1; // will be set later, during code generation
+		this.ofs = offset; // Offset of 0 with regards to %rbp
 
-		// Default to NoneType
-		if (type == null) {
-			type = Type.NONETYPE;
-		}
+		// Type can be `null` ! If the type is `null` when trying to access the variable,
+		// this means that the variable is being accessed before being assigned !
 		this.type = type;
 	}
 
 	/**
 	 * Create a new variable with default type NoneType
 	 */
-	static Variable mkVariable(String name) {
-		return new Variable(name, id++, Type.DYNAMIC);
+	static Variable mkVariable(String name, int offset) {
+		return new Variable(name, id++, Type.DYNAMIC, offset);
 	}
 
 	/**
 	 * Create a new variable with a given type
 	 */
-	static Variable mkVariable(String name, Type type) {
-		return new Variable(name, id++, type);
+	static Variable mkVariable(String name, Type type, int offset) {
+		return new Variable(name, id++, type, offset);
 	}
 
 	@Override
@@ -675,12 +678,27 @@ class Function {
 	// its return statements.
 	// If all types can be cast to one, a static type will be used. Else, the return
 	// type will be dynamic.
-	public Type returnType;
+	protected Type returnType;
+
+	// Stores the byte offset from the base stack frame in order to allocate enough stack space
+	// for all function arguments + all local variables for this function.
+	// This is determined during the type checking phase, where every local variable receives a stack frame offset.
+	protected int localVariablesOffset;
 
 	Function(String name, LinkedList<Variable> params) {
 		this.name = name;
 		this.params = params;
 		this.returnType = Type.NONETYPE; // By default
+		this.localVariablesOffset = 0; // Offset for local variables.
+		// We do not initialize it to - len * 8 here because we need to assign the offset to the `Variable` objects too
+	}
+
+	/**
+	 * Get the stack frame offset position for a new variable local to a function
+	 */
+	public int getStackFrameOffset() {
+		this.localVariablesOffset -= 8;
+		return this.localVariablesOffset;
 	}
 }
 
@@ -690,7 +708,7 @@ class Function {
  */
 abstract class TExpr {
 
-	protected final Type type;
+	protected Type type;
 
 	TExpr(Type type) {
 		assert type != null;

@@ -16,13 +16,6 @@ class Typing {
 	static TFile file(File f) {
 		TFile tFile = new TFile();
 
-		// TODO : parse the return statements for return type. Will determine how we compile it
-		// NOTE: using not dynamic types is a first optimisation (no runtime checking)
-		// il va falloir faire le boilerplate malloc, ça va être rigolo. On pourra passer un register en argument
-		// pour l'instant, finir les return types de fonctions, puis faire le print avec les checks d'instance.
-		// NOTE: si dynamique, il faudra appeler la fonction ? jsp. Les checks au runtime seront plus chiants, il faudra
-		// tout implémenter
-
 		for (Def d : f.l) {
 			Typer typer = new Typer();
 
@@ -32,10 +25,12 @@ class Typing {
 			}
 
 			// Add all function arguments as local variables
-			LinkedList<Variable> params = new LinkedList<Variable>();
+			LinkedList<Variable> params = new LinkedList<>();
+			// Create the function element. We link it with the list of parameters right now
+			Function func = new Function(d.f.id, params);
+
 			for (Ident i : d.l) {
-				Variable v = Variable.mkVariable(i.id, Type.DYNAMIC); // Because we do not use type hinting, arguments are dynamic by default
-				// TODO: we could add type hinting in order to have more efficient statically typed arguments
+				Variable v = Variable.mkVariable(i.id, Type.DYNAMIC, func.getStackFrameOffset()); // Because we do not use type hinting, arguments are dynamic by default
 
 				if (typer.vars.containsKey(v.name)) {
 					error(i.loc, "Parameter " + v.name + " is already defined");
@@ -44,13 +39,18 @@ class Typing {
 				params.push(v);
 			}
 
-			// Create the function element and add it to the type checking function list
-			Function func = new Function(d.f.id, params);
+			// Add the function to the list of functions that are valid to be called
 			Typer.functions.put(d.f.id, func);
 
 			// Accept this function and parse its return statements
-			typer.returns.clear(); // Clear the return statement list
+			// Clear the return statement list & tell the typer that all new variable declarations are local to this function
+			typer.returns.clear();
+			typer.currentFunction = func;
+
+			// Accept the function body
 			d.s.accept(typer);
+
+			// Set the return type of the function by parsing all return statements
 			func.returnType = typer.currentReturnType(); // Find out the current return type of the function
 			typer.setReturnTypes(func.returnType); // Set the return type of all return statements
 
@@ -62,9 +62,10 @@ class Typing {
 		Typer mainTyper = new Typer();
 		// Visit the main function. We will keep the local variables of main() as global
 		// variables
-		f.s.accept(mainTyper);
-		LinkedList<Variable> mainParams = new LinkedList<Variable>();
+		LinkedList<Variable> mainParams = new LinkedList<>();
 		Function mainFunc = new Function("", mainParams);
+		mainTyper.currentFunction = mainFunc; // Same for the main function scope
+		f.s.accept(mainTyper);
 		TDef mainTDef = new TDef(mainFunc, mainTyper.currStmt);
 
 		// Add the main function to the function list

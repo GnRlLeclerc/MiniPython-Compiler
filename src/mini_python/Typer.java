@@ -10,6 +10,10 @@ class Todo extends Error {
 	@Serial
 	private static final long serialVersionUID = 1L;
 
+	Todo(String message) {
+		super("TODO: " + message);
+	}
+
 	Todo() {
 		super("TODO");
 	}
@@ -21,15 +25,23 @@ class Typer implements Visitor {
 	static public HashMap<String, Function> functions = new HashMap<>();
 
 	static {
+		// Create the buitlin list function
 		LinkedList<Variable> listParams = new LinkedList<>();
-		listParams.add(Variable.mkVariable("l"));
-		functions.put("list", new Function("list", listParams));
+		Function list = new Function("list", listParams);
+		listParams.add(Variable.mkVariable("l", list.getStackFrameOffset()));
+		functions.put("list", list);
+
+		// Create the buitlin len function
 		LinkedList<Variable> lenParams = new LinkedList<>();
-		lenParams.add(Variable.mkVariable("l"));
-		functions.put("len", new Function("len", lenParams));
+		Function len = new Function("len", lenParams);
+		lenParams.add(Variable.mkVariable("l", len.getStackFrameOffset()));
+		functions.put("len", len);
+
+		// Create the buitlin range function
 		LinkedList<Variable> rangeParams = new LinkedList<>();
-		rangeParams.add(Variable.mkVariable("n"));
-		functions.put("range", new Function("range", rangeParams));
+		Function range = new Function("range", rangeParams);
+		rangeParams.add(Variable.mkVariable("n", range.getStackFrameOffset()));
+		functions.put("range", range);
 	}
 
 	// Store locally defined variables
@@ -38,6 +50,9 @@ class Typer implements Visitor {
 	// Store the return instructions of a function in order to determine its return type
 	public ArrayList<TSreturn> returns = new ArrayList<>();
 	public TStmt currStmt;
+	// Store the current function in which the typer is currently working in order to remember in which stack frame
+	// to allocate an offset for the new variables we might encounter.
+	protected Function currentFunction;
 	private TExpr currExpr;
 
 	public Typer() {
@@ -176,8 +191,11 @@ class Typer implements Visitor {
 	@Override
 	public void visit(Sassign s) {
 		s.e.accept(this);
-		Variable v = Variable.mkVariable(s.x.id);
-		this.vars.put(s.x.id, v);
+
+		// Reuse or create the variable used to contain the assignment output
+		Variable v = this.getOrCreateVar(s.x.id);
+		v.type = this.currExpr.getType(); // Change the variable type to match the assignment
+
 		this.currStmt = new TSassign(v, this.currExpr);
 	}
 
@@ -192,8 +210,9 @@ class Typer implements Visitor {
 
 	@Override
 	public void visit(Sfor s) {
-		Variable v = Variable.mkVariable(s.x.id);
-		this.vars.put(s.x.id, v);
+		// Reuse or create the variable used to contain the loop output
+		Variable v = this.getOrCreateVar(s.x.id);
+
 		s.e.accept(this);
 		s.s.accept(this);
 		this.currStmt = new TSfor(v, this.currExpr, this.currStmt);
@@ -244,5 +263,20 @@ class Typer implements Visitor {
 		for (TSreturn tsreturn : this.returns) {
 			tsreturn.returnType = type;
 		}
+	}
+
+	/**
+	 * Helper: given a variable name, get it from the current scope or create it.
+	 * This will help avoid allocating new space on the stack when reusing a variable name for other assignments
+	 */
+	public Variable getOrCreateVar(String id) {
+		Variable v;
+		if (!this.vars.containsKey(id)) {
+			v = Variable.mkVariable(id, this.currentFunction.getStackFrameOffset());
+			this.vars.put(id, v);
+		} else {
+			v = this.vars.get(id);
+		}
+		return v;
 	}
 }
