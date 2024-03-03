@@ -1,7 +1,6 @@
 package mini_python;
 
 import mini_python.libc.ExtendedLibc;
-import mini_python.registers.Registers;
 import mini_python.registers.Regs;
 import mini_python.typing.Type;
 
@@ -11,11 +10,7 @@ class Compiler implements TVisitor {
 	// Reference to the current function being compiled. Used by TSreturn in order to know the size of the local variables
 	// to be cleaned up upon returning.
 	protected TDef currentFunction;
-	// Store the state of the stack alignment. When using a popq or pushq
-	// instruction, increment or decrement this value.
-	// It will be used to align the stack to 16 bytes when doing system calls.
-	// It indicates a byte count and is always positive
-	protected int stackAlignOffset = 0;
+
 	X86_64 x86_64;
 	int cstId = 0;
 
@@ -25,40 +20,6 @@ class Compiler implements TVisitor {
 
 	// ******************************************* CONSTANT VISIT *************************************************** //
 
-	// Allocation helpers
-
-
-	/**
-	 * Helper: convert the stack top value from a static type to a dynamic type
-	 * TODO: remove this method, we will not need it.
-	 */
-	private void staticToDynamic(Type type) {
-
-		switch (type) {
-			case Type.NONETYPE -> // Allocate memory for the dynamic value
-					alloc_none();
-			case Type.BOOL -> {
-				// Allocate memory for the dynamic value
-				alloc_bool(
-
-				);
-				// Store the static value in the dynamic value, skipping the first tag byte
-				x86_64.popq(Regs.RDI); // Pop the static value from the stack
-				x86_64.movq(Regs.RDI, "1(%rax)");
-			}
-			case Type.INT64 -> {
-				// Allocate memory for the dynamic value
-				alloc_int64();
-				// Store the static value in the dynamic value, skipping the first tag byte
-				x86_64.popq(Regs.RDI); // Pop the static value from the stack
-				x86_64.movq(Regs.RDI, "1(%rax)");
-			}
-			default -> throw new Todo("staticToDynamic for static type " + type);
-		}
-
-		// Last: push the newly allocated dynamic value to the stack
-		x86_64.pushq(Regs.RAX);
-	}
 
 	private String newCstLabel() {
 		return "cst" + this.cstId++;
@@ -71,7 +32,6 @@ class Compiler implements TVisitor {
 
 		// Push it to the stack
 		x86_64.pushq(Regs.RAX);
-		stackAlignOffset += 1; // 1 pushed value
 
 		if (debug) {
 			System.out.println("Allocation for CNone");
@@ -86,7 +46,6 @@ class Compiler implements TVisitor {
 
 		// Push it to the stack
 		x86_64.pushq(Regs.RAX);
-		stackAlignOffset += 1; // 1 pushed value
 
 		if (debug) {
 			System.out.println("Allocation for Cbool: " + c.b);
@@ -103,7 +62,6 @@ class Compiler implements TVisitor {
 
 		alloc_int64(c.i); // Allocate and initialize a dynamic value to %rax
 		x86_64.pushq(Regs.RAX);
-		stackAlignOffset += 1; // 1 pushed value
 
 		if (debug) {
 			System.out.println("Allocation for Cint: " + c.i);
@@ -124,12 +82,11 @@ class Compiler implements TVisitor {
 		x86_64.dlabel(label);
 		x86_64.string(c.s);
 
-		// Allocate and copy the string. The new address is in %r12
+		// Allocate and copy the string. The new address is in %r13, not %r12 because we need to keep %r12 for the stack alignment
 		alloc_string_from_label(label, c.s);
 
 		// Push the string address on the stack
-		x86_64.pushq(Regs.R12);
-		stackAlignOffset += 1; // 1 pushed value
+		x86_64.pushq(Regs.R13);
 
 		if (debug) {
 			System.out.println("Allocation for Cstring: \"" + c.s + "\" with data label \"" + label + '"');
@@ -163,7 +120,6 @@ class Compiler implements TVisitor {
 		// Pop the two results from the stack onto usual registers
 		x86_64.popq(Regs.RSI); // %rsi = 2nd value
 		x86_64.popq(Regs.RDI); // %rdi = 1st value
-		stackAlignOffset -= 2; // 2 popped values
 
 		// TODO: this implementation only works with integers and boolean. We must
 		// implement it for all types (string, list...)
@@ -223,7 +179,6 @@ class Compiler implements TVisitor {
 
 		// Finally: push the result to the stack
 		x86_64.pushq(Regs.RDI);
-		stackAlignOffset += 1; // 1 pushed value
 	}
 
 	@Override
@@ -269,48 +224,26 @@ class Compiler implements TVisitor {
 		// available for the next operation
 		x86_64.movq(e.x.ofs + "(" + Regs.RBP + ")", Regs.RDI);
 		x86_64.pushq(Regs.RDI);
-		stackAlignOffset += 1; // 1 pushed value
 	}
 
 	@Override
 	public void visit(TEcall e) {
 		// 1. Accept all arguments and push them to the stack in reverse order
-		int currArg = e.l.size() - 1;
+		// (this will be useful when we optimize the function call using registers or even reusing this stack frame
+		// instead of copying the arguments to the new stack frame.
+		// When registering a function, the arguments are given increasing offsets from the stack frame, in order.
 		for (TExpr expr : e.l.reversed()) {
 			expr.accept(this);
-
-			// Convert the argument values from static to dynamic if needed
-			if (expr.type != Type.DYNAMIC && e.f.params.get(currArg).type == Type.DYNAMIC) {
-				// We need to convert the static value to a dynamic one
-				staticToDynamic(expr.type);
-
-			} else if (expr.type == Type.DYNAMIC && e.f.params.get(currArg).type != Type.DYNAMIC) {
-				// We need to convert the dynamic value to a static one
-				// We will pop the dynamic value from the stack and store it in a static variable
-				// Then, we will push the static value to the stack
-				throw new Todo("Dynamic to static conversion");
-			}
-
-			currArg--;
-		}
-		stackAlignOffset += e.l.size(); // e.l.size() pushed values
-
-		// 2. Pass and pop the first 6 arguments using registers
-		int argCount = e.l.size();
-		for (int i = 0; i < Math.min(6, argCount); i++) {
-			x86_64.popq(Registers.argReg(i).getCode());
-			stackAlignOffset -= 1; // 1 popped value
 		}
 
 		// 3. Call the function
-		alignStack();
 		x86_64.call("func_" + e.f.name);
-		unalignStack();
 
 		// 4. Push the returned value to the stack
 		x86_64.pushq(Regs.RAX);
 
-		stackAlignOffset += 1; // 1 pushed value
+		// 5. Remove the arguments from the stack
+		x86_64.addq("$" + 8 * e.l.size(), Regs.RSP);
 
 		if (debug) {
 			System.out.println("Function call: " + e.f.name + " with " + e.l.size() + " argument(s)");
@@ -332,7 +265,6 @@ class Compiler implements TVisitor {
 		// 3. Pop the index and list address from the stack into usual registers
 		x86_64.popq(Regs.RSI); // %rsi = index
 		x86_64.popq(Regs.RDI); // %rdi = list address
-		stackAlignOffset -= 2; // 2 popped values
 
 		// TODO: how to compare list length ? We need to allocate memory for lists and
 		// store their lengths
@@ -340,7 +272,6 @@ class Compiler implements TVisitor {
 		// 4. Load the value at the index and push it to the stack
 		x86_64.movq(Regs.RDI, Regs.RDI); // %rdi = list address
 		x86_64.pushq(Regs.RDI);
-		stackAlignOffset += 1; // 1 pushed value
 	}
 
 	@Override
@@ -378,9 +309,6 @@ class Compiler implements TVisitor {
 		// 5. Return from the function
 		x86_64.ret();
 
-		// We popped the stack frame and freed all the local variables
-		this.stackAlignOffset -= 1 - this.currentFunction.f.localVariablesOffset / 8;
-
 		if (debug) {
 			System.out.println("Return of type " + s.e.getType() + " from function " + currentFunction.f.name);
 		}
@@ -402,10 +330,9 @@ class Compiler implements TVisitor {
 		s.e.accept(this);
 		x86_64.popq(Regs.RDI);
 
-		// Copy the address and increment the reference count
-		x86_64.movq(Regs.RDI, s.x.ofs + "(" + Regs.RBP + ")");
-		x86_64.movq(s.x.ofs + "(" + Regs.RBP + ")", Regs.RDI); // Load the heap address to RDI
+		// Increment the reference count and copy the address
 		x86_64.incq("1(" + Regs.RDI + ")"); // Increment the reference count (skip the first tag byte)
+		x86_64.movq(Regs.RDI, s.x.ofs + "(" + Regs.RBP + ")"); // Copy the address to the variable stack frame offset
 
 		if (debug) {
 			System.out.println("Variable assignment: " + s.x.name + " (uid: "
@@ -543,7 +470,8 @@ class Compiler implements TVisitor {
 	/**
 	 * Allocate a dynamic string value that copies a hardcoded string.
 	 * The string tag is 3
-	 * This function will put the memory pointer in %r12 because we call strcpy which will update the value of %rax
+	 * This function will put the memory pointer in %r13 because we call strcpy which will update the value of %rax,
+	 * and %r12 is used for stack alignment.
 	 */
 	private void alloc_string_from_label(String label, String value) {
 
@@ -568,10 +496,10 @@ class Compiler implements TVisitor {
 		// Copy the string
 		x86_64.leaq("17(%rax)", Regs.RDI); // %rdi = %rax + 1 + 8 + 8 // Move the destination address to %rdi
 		x86_64.movq("$" + label, Regs.RSI); // Move the source address to %rsi
-		x86_64.movq(Regs.RAX, Regs.R12); // Move the actual address of the string to a callee-saved register
+		x86_64.movq(Regs.RAX, Regs.R13); // Move the actual address of the string to a callee-saved register
 		callLibc("strcpy"); // Note: this will update the value of rax !
 
-		// The newly allocated and copied value is in %r12
+		// The newly allocated and copied value is in %r13 (not %r12 because we need to keep %r12 for the stack alignment)
 	}
 
 	// ******************************************* LIBC CALL HELPERS ************************************************ //
@@ -597,30 +525,65 @@ class Compiler implements TVisitor {
 
 	// ******************************************* STACK ALIGNMENT ************************************************* //
 
+	// NOTE ABOUT STACK ALIGNMENT
+
+	// PRELIMINARY NOTES
+
+	// We only do pushq and popq, which push and pop 8-byte values to the stack.
+	// This means that the stack is either aligned to 16 bytes, or to 8 bytes (quite simple).
+
+	// A statement consumes every stack value that it pushed durig evaluation: it preserves the stack alignment.
+	// This means that we do not have to keep track of branching, as no branches or statements will permanently misalign the stack.
+
+	// POSSIBLE STRATEGIES
+
+	// DYNAMIC ALIGNMENT (the current one)
+
+	// Because we pass all arguments through the stack, it is impossible to align the stack "before" calling a function
+	// and after having pushed the arguments on the stack (this is done by "evaluating" them),
+	// as it might make the first argument not be at 16(%rbp) anymore because of the padding (it would be at 24(%rbp) instead).
+
+	// This means that our own functions can be called with arbitrary stack alignment.
+	// We cannot statically determine the stack alignment upon entering a function.
+
+	// Thus, we use the following strategy:
+	// * only align the stack when calling libc and extended libc functions
+	// * align the stack by computing the current alignment, storing the offset in a callee-saved register,
+	// ...and then restoring it from this same callee-saved register upon returning from the function.
+
+	// STATIC ALIGNMENT (could be slightly more optimized ?)
+
+	// If we want to be able to statically determine if the stack is aligned or not, we need to have the stack aligned
+	// before calling any of our own functions. This poses an issue when pushing an odd number of arguments to the stack,
+	// as alignment will introduce a breaking 8-byte padding.
+
+	// A solution is to have all of our functions FORCIBLY take an even number of arguments. When calling functions
+	// with an odd number of arguments, we pushq before evaluating the first argument a phantom 8-byte value to the stack
+
+	// This means that we spend less time computing the current stack alignment and storing it, and we align it with a simple
+	// pushq. Very nice ! Warning: take into account the main function allocating space for its own local variables !
 
 	/**
 	 * Align the stack to 16 bytes by allocating enough space given the current
-	 * stack alignment offset
+	 * stack alignment offset.
+	 * The current offset is stored in the callee-saved register %r12 for restoration upon returning.
 	 */
 	private void alignStack() {
-		stackAlignOffset = stackAlignOffset % 16;
-		if (stackAlignOffset == 0) {
-			return; // No need to align the stack
-		}
-
-		x86_64.subq("$" + (16 - stackAlignOffset), Regs.RSP);
+		// Compute the current stack alignment offset and store it in a callee-saved register, %r12
+		x86_64.movq(Regs.RSP, Regs.R12);
+		x86_64.andq("$8", Regs.R12); // %r12 will either be 0 (aligned stack) or 8 (misaligned stack by 8 bytes)
+		x86_64.subq(Regs.R12, Regs.RSP); // Allocate enough space to align the stack to 16 bytes
 	}
 
 	/**
-	 * Unalign the stack and restore its current offset
+	 * Unalign the stack and restore its current offset by reading the callee-saved register %r12
+	 * THIS FUNCTION MUST BE CALLED IMMEDIATELY AFTER CALLING A LIBC FUNCTION.
+	 * <p>
+	 * It might pop the first stack value, so do not calling when the stack top value is not padding.
 	 */
 	private void unalignStack() {
-		if (stackAlignOffset == 0) {
-			return; // No need to unalign the stack
-		}
-
-		// Unalign the stack to its original offset
-		x86_64.addq("$" + (16 - stackAlignOffset), Regs.RSP);
+		// Restore the stack alignment offset.
+		x86_64.addq(Regs.R12, Regs.RSP);
 	}
 
 

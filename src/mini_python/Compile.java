@@ -1,6 +1,5 @@
 package mini_python;
 
-import mini_python.registers.Registers;
 import mini_python.registers.Regs;
 
 class Compile {
@@ -50,7 +49,6 @@ class Compile {
 
 		// First instruction: push the current stack pointer position to %rbp
 		// This basically initializes the stack frame
-		x86_64.pushq(Regs.RBP); // Save the initial stack frame (although it is not used)
 		x86_64.movq(Regs.RSP, Regs.RBP);
 	}
 
@@ -65,6 +63,13 @@ class Compile {
 
 	/**
 	 * Accept a function definition (not the main function)
+	 * <p>
+	 * NOTE: because all arguments are evaluated and pushed to the stack, and then copied to local variables also
+	 * allocated on the stack, we do not need to try and optimize the function call using registers.
+	 * <p>
+	 * TODO: we might even make the local variables of all functions (except main) refer to the stack positions before
+	 * the new stack frame and return value (ie 16(%rbp), 24(%rbp), etc instead of -8(%rbp), -16(%rbp), etc) because
+	 * we are essentially duplicating the stack frame for each function call.
 	 */
 	static void acceptFunc(Compiler compiler, TDef def) {
 		compiler.x86_64.label("func_" + def.f.name); // Prepend "func_" in order to avoid collisions
@@ -79,22 +84,19 @@ class Compile {
 		// Move all arguments to the stack frame that we just allocated
 		int argCount = def.f.params.size();
 
-		// Move the first 6 arguments to the stack frame
-		for (int i = 0; i < Math.min(6, argCount); i++) {
-			compiler.x86_64.movq(Registers.argReg(i).getCode(), -(i + 1) * 8 + "(%rbp)");
-		}
-
-		// Move the rest of the arguments to the stack frame
-		for (int i = 6; i < argCount; i++) {
-			compiler.x86_64.movq((i - 4) * 8 + "(%rbp)", -(1 + i) * 8 + "(%rbp)");
+		// Move all arguments to the new stack frame. The 1st argument is the last that was pushed to the stack
+		// (so that depending on our optimization strategy, we have the choice to reuse the previous stack frame,
+		// with arguments having their absolute stack frame offset always increasing in the order of arguments).
+		for (int i = 0; i < argCount; i++) {
+			// NOTE: movq cannot directly move from one stack position to another. If we reused the previous stack frame,
+			// we would save arg_count * 2 instructions ! We use %rax as a temporary register to move the arguments.
+			compiler.x86_64.movq((i + 2) * 8 + "(%rbp)", Regs.RAX);
+			compiler.x86_64.movq(Regs.RAX, -(1 + i) * 8 + "(%rbp)");
 		}
 
 		// Accept the function body. It contains return statements, we do not need to restore the stack frame
-		// and dealloc local variables.
+		// and dealloc local variables here, the return statements will handle it in our compiler.
 		compiler.currentFunction = def; // Set the current function reference for cleaning up the correct stack size upon returning.
-		compiler.stackAlignOffset = 0; // Reset stack alignment offset.
-		// We align the stack to 16 bytes before calling our functions,
-		// else it is impossible to keep track of its changes when multiple calls occur.
 		def.body.accept(compiler);
 	}
 }

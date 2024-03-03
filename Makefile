@@ -14,3 +14,8 @@ libc:
 compile:
 	gcc -O3 -c test.s -o bin/test.o
 	gcc -O3 -no-pie -o test bin/test.o -L./bin/libc_extended -llibc_extended
+
+# Compile our output assembly and link it together with our "libc extension" with no optimizations and a debug flag
+debug:
+	gcc -g -c test.s -o bin/test.o
+	gcc -g -no-pie -o test bin/test.o -L./bin/libc_extended -llibc_extended
