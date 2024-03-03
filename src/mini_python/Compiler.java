@@ -23,139 +23,31 @@ class Compiler implements TVisitor {
 		this.x86_64 = new X86_64();
 	}
 
-	/**
-	 * Align the stack to 16 bytes by allocating enough space given the current
-	 * stack alignment offset
-	 */
-	private void alignStack() {
-		stackAlignOffset = stackAlignOffset % 16;
-		if (stackAlignOffset == 0) {
-			return; // No need to align the stack
-		}
-
-		x86_64.subq("$" + (16 - stackAlignOffset), Regs.RSP);
-	}
-
-	/**
-	 * Unalign the stack and restore its current offset
-	 */
-	private void unalignStack() {
-		if (stackAlignOffset == 0) {
-			return; // No need to unalign the stack
-		}
-
-		// Unalign the stack to its original offset
-		x86_64.addq("$" + (16 - stackAlignOffset), Regs.RSP);
-	}
-
-	/**
-	 * Call a function from the extended libc, and handle stack alignment
-	 */
-	private void callExtendedLibc(ExtendedLibc function) {
-		alignStack();
-		x86_64.call(function.getLabel());
-		unalignStack();
-	}
-
-	/**
-	 * Print a newline to standard output
-	 */
-	public void newline() {
-		alignStack();
-
-		x86_64.movq("$10", Regs.RDI); // 10 is the code for '\n'
-		x86_64.call("putchar");
-
-		unalignStack();
-	}
-
-	/**
-	 * Printf wrapper to align the stack and zero rax
-	 */
-	public void printf() {
-		// Zero %rax
-		x86_64.xorq(Regs.RAX, Regs.RAX);
-
-		alignStack();
-
-		// Call printf
-		x86_64.call("printf");
-
-		unalignStack();
-	}
-
-	/**
-	 * Printf wrapper that also prints a newline
-	 */
-	public void printfln() {
-
-		// Zero %rax
-		x86_64.xorq(Regs.RAX, Regs.RAX);
-
-		alignStack();
-
-		// Call printf
-		x86_64.call("printf");
-
-		// Call putchar
-		x86_64.movq("$10", Regs.RDI); // 10 is the code for '\n'
-		x86_64.call("putchar");
-
-		unalignStack();
-	}
+	// ******************************************* CONSTANT VISIT *************************************************** //
 
 	// Allocation helpers
 
-	/**
-	 * Allocate a dynamic None value.
-	 * No value is needed, just the tag. The None tag is 0
-	 * This function will put the memory pointer in %rax.
-	 */
-	private void alloc_none() {
-		x86_64.movq(1, Regs.RDI);
-		callExtendedLibc(ExtendedLibc.ALLOC_OR_PANIC);
-
-		// The pointer result is in %rax. We need to put 0 in the first byte
-		x86_64.movq(0, Regs.RDI);
-		x86_64.mov("%dil", "(%rax)"); // See https://stackoverflow.com/a/65527553
-	}
 
 	/**
 	 * Allocate a dynamic bool value.
-	 * The bool byte tag is 0.
+	 * The bool byte tag is 1.
 	 * This function will put the memory pointer in %rax.
 	 */
 	private void alloc_bool() {
-
 		// For an bool, we will need 1 byte for the type tag, and 8 bytes for the value (we store them as int64).
 		x86_64.movq(9, Regs.RDI);
 
-		callExtendedLibc(ExtendedLibc.ALLOC_OR_PANIC);
+		callLibc("malloc");
 
 		// The pointer result is in %rax. We need to put 1 in the first byte
 		x86_64.movq(1, Regs.RDI);
 		x86_64.mov("%dil", "(%rax)"); // See https://stackoverflow.com/a/65527553
 	}
 
-	/**
-	 * Allocate a dynamic int64 value.
-	 * The int64 byte tag is 2.
-	 * This function will put the memory pointer in %rax.
-	 */
-	private void alloc_int64() {
-
-		// For an int64, we will need 1 byte for the type tag, and 8 bytes for the value.
-		x86_64.movq(9, Regs.RDI);
-
-		callExtendedLibc(ExtendedLibc.ALLOC_OR_PANIC);
-
-		// The pointer result is in %rax. We need to put 2 in the first byte
-		x86_64.movq(2, Regs.RDI);
-		x86_64.mov("%dil", "(%rax)"); // See https://stackoverflow.com/a/65527553
-	}
 
 	/**
 	 * Helper: convert the stack top value from a static type to a dynamic type
+	 * TODO: remove this method, we will not need it.
 	 */
 	private void staticToDynamic(Type type) {
 
@@ -189,57 +81,80 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(Cnone c) {
-		// Push 0 to the stack (falsy value)
-		x86_64.movq("$0", Regs.RDI);
-		x86_64.pushq(Regs.RDI);
+		// Allocate a new None dynamic value into %rax
+		alloc_none();
+
+		// Push it to the stack
+		x86_64.pushq(Regs.RAX);
 		stackAlignOffset += 1; // 1 pushed value
 
 		if (debug) {
-			System.out.println("CNone");
+			System.out.println("Allocation for CNone");
 		}
 	}
 
 	@Override
 	public void visit(Cbool c) {
+		// Allocate a new bool dynamic value into %rax
+		alloc_bool();
 
-		// Push the boolean value on the stack
-		x86_64.movq("$" + (c.b ? 1 : 0), Regs.RDI);
-		x86_64.pushq(Regs.RDI);
+		// Store the boolean value in the dynamic value, skipping the first tag byte
+		x86_64.movq(c.b ? 1 : 0, "1(%rax)");
+
+		// Push it to the stack
+		x86_64.pushq(Regs.RAX);
 		stackAlignOffset += 1; // 1 pushed value
 
 		if (debug) {
-			System.out.println("Cbool: " + c.b);
+			System.out.println("Allocation for Cbool: " + c.b);
 		}
 	}
 
+
+	/**
+	 * Allocate and initialize a dynamic value for containing integers.
+	 * The value address is pushed to the stack
+	 */
+	@Override
+	public void visit(Cint c) {
+
+		alloc_int64(c.i); // Allocate and initialize a dynamic value to %rax
+		x86_64.pushq(Regs.RAX);
+		stackAlignOffset += 1; // 1 pushed value
+
+		if (debug) {
+			System.out.println("Allocation for Cint: " + c.i);
+		}
+	}
+
+
+	/**
+	 * Allocate and initialize a dynamic value for containing strings.
+	 * The value address is pushed to the stack
+	 * The actual origin string is hard coded into the assembly data, but this allocation will copy it into the heap
+	 */
 	@Override
 	public void visit(Cstring c) {
+
+		// Hardcode the string into assembly
 		String label = newCstLabel();
 		x86_64.dlabel(label);
 		x86_64.string(c.s);
 
+		// Allocate and copy the string
+		alloc_string_from_label(label, c.s);
+
 		// Push the string address on the stack
-		x86_64.movq("$" + label, Regs.RDI);
-		x86_64.pushq(Regs.RDI);
+		x86_64.pushq(Regs.RAX);
 		stackAlignOffset += 1; // 1 pushed value
 
 		if (debug) {
-			System.out.println("Cstring: " + c.s + " -> " + label);
+			System.out.println("Allocation for Cstring: \"" + c.s + "\" with data label \"" + label + '"');
 		}
 	}
 
-	@Override
-	public void visit(Cint c) {
+	// ****************************************** EXPRESSIONS VISIT ************************************************* //
 
-		// Directly push the integer value on the stack
-		x86_64.movq("$" + c.i, Regs.RDI);
-		x86_64.pushq(Regs.RDI);
-		stackAlignOffset += 1; // 1 pushed value
-
-		if (debug) {
-			System.out.println("Cint: " + c.i);
-		}
-	}
 
 	/**
 	 * Visit a constant. This method redirects to the specific Constant visit
@@ -488,24 +403,30 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TSassign s) {
+		// TODO: garbage collect the previous value if needed (do a helper method to push the correct assembly inline)
+
+		// There are 2 possibilities:
+
+		// 1. This is a constant value being allocated to a dynamic variable.
+		// 2. This is an assignment from an existing dynamic value.
+
+		// In both cases, accepting the expression will result in pushing to the stack a reference to a dynamic value,
+		// whether it already existed or was just created. We only have to update its reference count.
+
+		// Accept the statement expression and push the returned value to the stack. Pop it straight up to %rdi
+		s.e.accept(this);
+		x86_64.popq(Regs.RDI);
+
+		// Copy the address and increment the reference count
+		x86_64.movq(Regs.RDI, s.x.ofs + "(" + Regs.RBP + ")");
+		x86_64.incq(s.x.ofs + 1 + "(" + Regs.RBP + ")"); // Increment the reference count (skip the first tag byte)
 
 		if (debug) {
-			System.out.println("Variable assignment: " + s.x.name + " with new type " + s.e.getType() + " (uid: "
-					+ s.x.uid + ")" + " with stack frame offset of " + s.x.ofs + " bytes");
+			System.out.println("Variable assignment: " + s.x.name + " (uid: "
+					+ s.x.uid + ")" + " with stack frame offset of " + s.x.ofs + " bytes, from a "
+					+ ((s.e instanceof TEcst) ? "constant" : "dynamic") + " value");
 		}
 
-		// 1. Evaluate the value to be stored and push it to the stack
-		s.e.accept(this);
-
-		// 2. Pop the value from the stack into a usual register
-		x86_64.popq(Regs.RDI);
-		stackAlignOffset -= 1; // 1 popped value
-
-		// 3. We just assigned a value to the variable: update the type of the variable
-		s.x.type = s.e.getType();
-
-		// 4. Store the value into the variable
-		x86_64.movq(Regs.RDI, s.x.ofs + "(" + Regs.RBP + ")");
 	}
 
 	@Override
@@ -568,4 +489,146 @@ class Compiler implements TVisitor {
 	public void visit(TSset s) {
 		throw new Todo("TSet");
 	}
+
+	// ************************************************************************************************************** //
+	//                                 HELPER FUNCTIONS FOR ASSEMBLY CODE GENERATION                                  //
+	// ************************************************************************************************************** //
+
+	// *********************************************** ALLOCATION *************************************************** //
+
+	/**
+	 * Allocate a dynamic value for a given type that has a fixed size (not string or list)
+	 * Prefills its type tag with the correct one, the reference count with 0, and returns the memory pointer in %rax.
+	 * (because this is where malloc returns the pointer)
+	 */
+	private void alloc_known_size(Type type) {
+		int byteSize = switch (type) {
+			case NONETYPE -> 1 + 8;
+			case BOOL, INT64 -> 1 + 8 + 8; // 1 tag byte + 8 ref count + 8 value
+			default -> throw new Error("Type " + type + " cannot be allocated with a known fixed size");
+		};
+
+		x86_64.movq(byteSize, Regs.RDI); // Allocate memory for the dynamic value
+		callLibc("malloc");
+
+		// The pointer result is in %rax. We need to put the type tag in the first byte
+		x86_64.movq(type.typeTag(), Regs.RDI);
+		x86_64.mov("%dil", "(%rax)"); // See https://stackoverflow.com/a/65527553
+
+		// Initialize the ref count to 0 (the allocated value has not been assigned to any variable yet)
+		x86_64.movq(0, "1(%rax)");
+	}
+
+	/**
+	 * Allocate a dynamic int64 value.
+	 * The int64 byte tag is 2.
+	 * This function will put the memory pointer in %rax because this is where malloc returns the pointer.
+	 */
+	private void alloc_int64() {
+		alloc_known_size(Type.INT64);
+	}
+
+	/**
+	 * Allocate a dynamic int64 value with an initial value
+	 * The int64 byte tag is 2.
+	 * This function will put the memory pointer in %rax because this is where malloc returns the pointer.
+	 */
+	private void alloc_int64(long value) {
+		alloc_int64();
+		// Store the value in the dynamic value, skipping the first tag byte and the ref count
+		x86_64.movq("$" + value, "9(%rax)");
+	}
+
+
+	/**
+	 * Allocate a dynamic None value.
+	 * No value is needed, just the tag. The None tag is 0
+	 * This function will put the memory pointer in %rax because this is where malloc returns the pointer.
+	 */
+	private void alloc_none() {
+		alloc_known_size(Type.NONETYPE);
+	}
+
+	/**
+	 * Allocate a dynamic string value that copies a hardcoded string.
+	 * The string tag is 3
+	 * This function will put the memory pointer in %rax because this is where malloc returns the pointer.
+	 */
+	private void alloc_string_from_label(String label, String value) {
+
+		// Because the string is known at compile time, we do not need to compute its size dynamically.
+		// 1 tag byte + 8 ref count + 8 length + string length + 1 null byte
+		long byteSize = 1 + 8 + 8 + value.length() + 1;
+
+		x86_64.movq("$" + byteSize, Regs.RDI); // Allocate memory for the dynamic value
+		callLibc("malloc");
+
+		// The pointer result is in %rax. We need to put the type tag in the first byte
+		x86_64.movq("$3", Regs.RDI);
+		x86_64.mov("%dil", "(%rax)"); // See https://stackoverflow.com/a/65527553
+
+		// Initialize the ref count to 0 (the allocated value has not been assigned to any variable yet)
+		x86_64.movq(0, "1(%rax)");
+
+		// Initialize the length
+		x86_64.movq("$" + value.length(), "9(%rax)");
+
+		// Copy the string
+		x86_64.leaq("17(%rax)", Regs.RDI); // %rdi = %rax + 1 + 8 + 8 // Move the destination address to %rdi
+		x86_64.movq("$" + label, Regs.RSI); // Move the source address to %rsi
+		callLibc("strcpy");
+
+		// The newly allocated and copied value is in %rax.
+	}
+
+	// ******************************************* LIBC CALL HELPERS ************************************************ //
+
+
+	/**
+	 * Call a function from the standard libc, and handle stack alignment
+	 */
+	private void callLibc(String function) {
+		alignStack();
+		x86_64.call(function);
+		unalignStack();
+	}
+
+	/**
+	 * Call a function from the extended libc, and handle stack alignment
+	 */
+	private void callExtendedLibc(ExtendedLibc function) {
+		alignStack();
+		x86_64.call(function.getLabel());
+		unalignStack();
+	}
+
+	// ******************************************* STACK ALIGNMENT ************************************************* //
+
+
+	/**
+	 * Align the stack to 16 bytes by allocating enough space given the current
+	 * stack alignment offset
+	 */
+	private void alignStack() {
+		stackAlignOffset = stackAlignOffset % 16;
+		if (stackAlignOffset == 0) {
+			return; // No need to align the stack
+		}
+
+		x86_64.subq("$" + (16 - stackAlignOffset), Regs.RSP);
+	}
+
+	/**
+	 * Unalign the stack and restore its current offset
+	 */
+	private void unalignStack() {
+		if (stackAlignOffset == 0) {
+			return; // No need to unalign the stack
+		}
+
+		// Unalign the stack to its original offset
+		x86_64.addq("$" + (16 - stackAlignOffset), Regs.RSP);
+	}
+
+
 }
