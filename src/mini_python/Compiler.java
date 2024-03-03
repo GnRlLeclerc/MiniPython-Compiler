@@ -29,23 +29,6 @@ class Compiler implements TVisitor {
 
 
 	/**
-	 * Allocate a dynamic bool value.
-	 * The bool byte tag is 1.
-	 * This function will put the memory pointer in %rax.
-	 */
-	private void alloc_bool() {
-		// For an bool, we will need 1 byte for the type tag, and 8 bytes for the value (we store them as int64).
-		x86_64.movq(9, Regs.RDI);
-
-		callLibc("malloc");
-
-		// The pointer result is in %rax. We need to put 1 in the first byte
-		x86_64.movq(1, Regs.RDI);
-		x86_64.mov("%dil", "(%rax)"); // See https://stackoverflow.com/a/65527553
-	}
-
-
-	/**
 	 * Helper: convert the stack top value from a static type to a dynamic type
 	 * TODO: remove this method, we will not need it.
 	 */
@@ -56,7 +39,9 @@ class Compiler implements TVisitor {
 					alloc_none();
 			case Type.BOOL -> {
 				// Allocate memory for the dynamic value
-				alloc_bool();
+				alloc_bool(
+
+				);
 				// Store the static value in the dynamic value, skipping the first tag byte
 				x86_64.popq(Regs.RDI); // Pop the static value from the stack
 				x86_64.movq(Regs.RDI, "1(%rax)");
@@ -96,10 +81,8 @@ class Compiler implements TVisitor {
 	@Override
 	public void visit(Cbool c) {
 		// Allocate a new bool dynamic value into %rax
-		alloc_bool();
 
-		// Store the boolean value in the dynamic value, skipping the first tag byte
-		x86_64.movq(c.b ? 1 : 0, "1(%rax)");
+		alloc_bool(c.b);
 
 		// Push it to the stack
 		x86_64.pushq(Regs.RAX);
@@ -141,11 +124,11 @@ class Compiler implements TVisitor {
 		x86_64.dlabel(label);
 		x86_64.string(c.s);
 
-		// Allocate and copy the string
+		// Allocate and copy the string. The new address is in %r12
 		alloc_string_from_label(label, c.s);
 
 		// Push the string address on the stack
-		x86_64.pushq(Regs.RAX);
+		x86_64.pushq(Regs.R12);
 		stackAlignOffset += 1; // 1 pushed value
 
 		if (debug) {
@@ -269,7 +252,6 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TEident e) {
-
 		// Reset the type of this statement to that of the variable, which may have been
 		// updated with assignments
 		e.type = e.x.type;
@@ -370,6 +352,9 @@ class Compiler implements TVisitor {
 	public void visit(TErange e) {
 	}
 
+	// ******************************************** STATEMENT VISIT ************************************************* //
+
+
 	@Override
 	public void visit(TSif s) {
 		throw new Todo("TSif");
@@ -419,7 +404,8 @@ class Compiler implements TVisitor {
 
 		// Copy the address and increment the reference count
 		x86_64.movq(Regs.RDI, s.x.ofs + "(" + Regs.RBP + ")");
-		x86_64.incq(s.x.ofs + 1 + "(" + Regs.RBP + ")"); // Increment the reference count (skip the first tag byte)
+		x86_64.movq(s.x.ofs + "(" + Regs.RBP + ")", Regs.RDI); // Load the heap address to RDI
+		x86_64.incq("1(" + Regs.RDI + ")"); // Increment the reference count (skip the first tag byte)
 
 		if (debug) {
 			System.out.println("Variable assignment: " + s.x.name + " (uid: "
@@ -431,32 +417,18 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TSprint s) {
-
 		// 1. Evaluate the value to be printed and push it to the stack
 		s.e.accept(this);
 
-		// 2. Pop the value to the %rdi register in order to pass it as an argument to
-		// the correct extended_libc function for printing
-		x86_64.popq(Regs.RDI); // %rdi = string address or int value, as the 1st argument. If None, this is
-		// useless and won't do any wrong
-		stackAlignOffset -= 1; // 1 popped value
+		// 2. Pop the dynamic value address to the %rdi register
+		// in order to pass it as an argument to println_dynamic extended libc function
+		x86_64.popq(Regs.RDI);
+
+		// 3. Call the println_dynamic extended libc function
+		callExtendedLibc(ExtendedLibc.PRINTLN_DYNAMIC);
 
 		if (debug) {
 			System.out.println("Print -> " + s.e.getClass().getSimpleName() + " of type " + s.e.getType());
-		}
-
-		switch (s.e.getType()) {
-			case Type.STRING -> callExtendedLibc(ExtendedLibc.PRINTLN_STRING);
-
-			case Type.INT64 -> callExtendedLibc(ExtendedLibc.PRINTLN_INT64);
-
-			case Type.NONETYPE -> callExtendedLibc(ExtendedLibc.PRINTLN_NONE);
-
-			case Type.BOOL -> callExtendedLibc(ExtendedLibc.PRINTLN_BOOL);
-
-			case Type.DYNAMIC -> callExtendedLibc(ExtendedLibc.PRINTLN_DYNAMIC);
-
-			default -> throw new Todo("TSprint");
 		}
 	}
 
@@ -464,11 +436,14 @@ class Compiler implements TVisitor {
 	public void visit(TSblock s) {
 
 		if (debug) {
-			System.out.println("Statement block");
+			System.out.println("Statement block\n");
 		}
 
 		for (TStmt stmt : s.l) {
 			stmt.accept(this);
+			if (debug) {
+				System.out.println();
+			}
 		}
 	}
 
@@ -550,15 +525,32 @@ class Compiler implements TVisitor {
 	}
 
 	/**
+	 * Allocate a dynamic bool value.
+	 * The bool byte tag is 1.
+	 * This function will put the memory pointer in %rax.
+	 */
+	private void alloc_bool() {
+		alloc_known_size(Type.BOOL);
+	}
+
+	private void alloc_bool(boolean value) {
+		alloc_bool();
+		// Store the value in the dynamic value, skipping the first tag byte and the ref count
+		x86_64.movq(value ? 1 : 0, "9(%rax)");
+	}
+
+
+	/**
 	 * Allocate a dynamic string value that copies a hardcoded string.
 	 * The string tag is 3
-	 * This function will put the memory pointer in %rax because this is where malloc returns the pointer.
+	 * This function will put the memory pointer in %r12 because we call strcpy which will update the value of %rax
 	 */
 	private void alloc_string_from_label(String label, String value) {
 
 		// Because the string is known at compile time, we do not need to compute its size dynamically.
 		// 1 tag byte + 8 ref count + 8 length + string length + 1 null byte
-		long byteSize = 1 + 8 + 8 + value.length() + 1;
+		long stringBytes = value.getBytes().length + 1;
+		long byteSize = 1 + 8 + 8 + stringBytes;
 
 		x86_64.movq("$" + byteSize, Regs.RDI); // Allocate memory for the dynamic value
 		callLibc("malloc");
@@ -571,14 +563,15 @@ class Compiler implements TVisitor {
 		x86_64.movq(0, "1(%rax)");
 
 		// Initialize the length
-		x86_64.movq("$" + value.length(), "9(%rax)");
+		x86_64.movq("$" + stringBytes, "9(%rax)");
 
 		// Copy the string
 		x86_64.leaq("17(%rax)", Regs.RDI); // %rdi = %rax + 1 + 8 + 8 // Move the destination address to %rdi
 		x86_64.movq("$" + label, Regs.RSI); // Move the source address to %rsi
-		callLibc("strcpy");
+		x86_64.movq(Regs.RAX, Regs.R12); // Move the actual address of the string to a callee-saved register
+		callLibc("strcpy"); // Note: this will update the value of rax !
 
-		// The newly allocated and copied value is in %rax.
+		// The newly allocated and copied value is in %r12
 	}
 
 	// ******************************************* LIBC CALL HELPERS ************************************************ //

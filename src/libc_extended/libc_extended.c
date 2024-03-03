@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// WARNING: inline functions are abstracted away and cannot be called by other modules, like our asm code !
+
 /** Print the input value (int64 representation of a boolean) in Python boolean format */
 inline void println_bool(long long value)
 {
@@ -34,7 +36,7 @@ inline void println_none()
 
 /** Print a dynamic value. This function reads the 1st byte of the value and decides how to print it.
  */
-inline void println_dynamic(void *value)
+void println_dynamic(void *value)
 {
     char type = *((char *)value);
     switch (type)
