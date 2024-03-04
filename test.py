@@ -12,6 +12,8 @@ y = ["a"]
 z = [a]
 
 print(x + y)
+print(a < "b")
+print("c" < "b")
 print(x * 2)
 print(x == z)
 print(x == y)

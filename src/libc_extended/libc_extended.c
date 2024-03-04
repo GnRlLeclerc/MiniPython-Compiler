@@ -9,6 +9,7 @@
 #define LIST 4
 
 // Type combinations using tag1 << 3 + tag2
+#define NONE_NONE 0
 #define BOOL_BOOL 9
 #define BOOL_INT64 10
 #define INT64_BOOL 17
@@ -223,6 +224,15 @@ static inline char type_value(void *value)
     return *((char *)value);
 }
 
+/** Combine 2 byte types by multiplying the first by 8 and adding the second.
+ * This is a fast way to switch through all possible combinations of types.
+ * Because our tags do not go over 4 bits, the result fits in a byte too.
+ */
+static inline char combined_type(void *value1, void *value2)
+{
+    return (type_value(value1) << 3) + type_value(value2);
+}
+
 /** Compute the truthyness of a value */
 static inline int is_truthy(void *value)
 {
@@ -242,17 +252,12 @@ static inline int is_truthy(void *value)
     }
 }
 
-/** Combine 2 byte types by multiplying the first by 8 and adding the second.
- * This is a fast way to switch through all possible combinations of types.
- * Because our tags do not go over 4 bits, the result fits in a byte too.
+/** Compute the equality of two values. If the types are not compatible, the program will exit with an error.
  */
-static inline char combined_type(void *value1, void *value2)
-{
-    return (type_value(value1) << 3) + type_value(value2);
-}
-
 static inline int is_equal(void *value1, void *value2)
 {
+    // compatible : all types
+
     switch (combined_type(value1, value2))
     {
     // Boolean and integer addition.
@@ -292,8 +297,74 @@ static inline int is_equal(void *value1, void *value2)
         return result;
     }
 
+    case NONE_NONE:
+        return 1;
+
     default:
         return 0;
+    }
+}
+
+/** Compute the "<" operation for two values. If the types are not compatible, the program will exit with an error.
+ */
+static inline int is_lt(void *value1, void *value2)
+{
+    // compatible : int & bool
+    // string & string
+    // none is never compatible
+
+    switch (combined_type(value1, value2))
+    {
+    // Boolean and integer addition.
+    case BOOL_BOOL:
+    case BOOL_INT64:
+    case INT64_BOOL:
+    case INT64_INT64:
+        return *((long long *)(value1 + 1 + 8)) < *((long long *)(value2 + 1 + 8));
+
+    case STRING_STRING:
+        return strcmp((char *)(value1 + 1 + 8 + 8), (char *)(value2 + 1 + 8 + 8)) < 0;
+
+    case LIST_LIST:
+    {
+        long long size1 = *((long long *)(value1 + 1 + 8));
+        long long size2 = *((long long *)(value2 + 1 + 8));
+        long long min_size = size1 < size2 ? size1 : size2;
+        int result = 0;
+
+        for (long long i = 0; i < min_size; i++)
+        {
+            void *elem1 = *((void **)(value1 + 1 + 8 + 8 + i * 8));
+            void *elem2 = *((void **)(value2 + 1 + 8 + 8 + i * 8));
+
+            if (is_equal(elem1, elem2))
+            {
+                continue;
+            }
+            else if (is_lt(elem1, elem2))
+            {
+                result = 1;
+                break;
+            }
+            else
+            {
+                result = 0;
+                break;
+            }
+        }
+
+        if (result == 0)
+        {
+            return size1 < size2;
+        }
+
+        return result;
+    }
+
+    default:
+        // Default: unsupported types
+        printf("TypeError: unsupported operand type(s) for comparison (>, <, <=, =>): '%s' and '%s'\n", value_label(value1), value_label(value2));
+        exit(1);
         break;
     }
 }
@@ -448,35 +519,8 @@ void *sub_dynamic(void *value1, void *value2)
  */
 void *lt_dynamic(void *value1, void *value2)
 {
-    // compatible : int & bool
-    // string & string
-    // none is never compatible
-
     void *result = allocate_bool();
-
-    switch (combined_type(value1, value2))
-    {
-    // Boolean and integer addition.
-    case BOOL_BOOL:
-    case BOOL_INT64:
-    case INT64_BOOL:
-    case INT64_INT64:
-
-        *((long long *)(result + 1 + 8)) = *((long long *)(value1 + 1 + 8)) < *((long long *)(value2 + 1 + 8));
-        break;
-
-    case STRING_STRING:
-
-        *((long long *)(result + 1 + 8)) = strcmp((char *)(value1 + 1 + 8 + 8), (char *)(value2 + 1 + 8 + 8)) < 0;
-        break;
-
-    default:
-        // Default: unsupported types
-        printf("TypeError: unsupported operand type(s) for comparison (>, <, <=, =>): '%s' and '%s'\n", value_label(value1), value_label(value2));
-        exit(1);
-        break;
-    }
-
+    *((long long *)(result + 1 + 8)) = is_lt(value1, value2);
     return result;
 }
 
@@ -735,7 +779,6 @@ void *or_dynamic(void *value1, void *value2)
 /** Compute the == operation for two values. If the types are incompatible, the program will exit with an error */
 void *eq_dynamic(void *value1, void *value2)
 {
-    // compatible : all types
     void *result = allocate_bool();
     *((long long *)(result + 1 + 8)) = is_equal(value1, value2);
     return result;
