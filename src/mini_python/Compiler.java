@@ -224,10 +224,14 @@ class Compiler implements TVisitor {
 		e.e2.accept(this);
 
 		// 3. Pop the index and list address from the stack into usual registers
-		x86_64.popq(Regs.RSI); // %rsi = index
-		x86_64.popq(Regs.RDI); // %rdi = list address
+		x86_64.popq(Regs.RSI); // %rsi = index (2nd argument)
+		x86_64.popq(Regs.RDI); // %rdi = list address (1st argument)
 
-		throw new Todo("TEget");
+		// Call extended libc for this computation
+		callExtendedLibc(ExtendedLibc.GET_ELEMENT);
+
+		// Push the result to the stack
+		x86_64.pushq(Regs.RAX);
 	}
 
 	@Override

@@ -218,8 +218,10 @@ static inline char combined_type(void *value1, void *value2)
     return (type_value(value1) << 3) + type_value(value2);
 }
 
-/** Set list[index] = value, with arguments all being dynamic */
-void set_element(void *list, void *index, void *value)
+/** Computes the list address corresponding to the index.
+ * Does the type and boundary checks
+ */
+static inline void **list_index(void *list, void *index)
 {
     // 1. Check that the index has the right type
     if (type_value(index) != INT64 && type_value(index) != BOOL)
@@ -238,14 +240,29 @@ void set_element(void *list, void *index, void *value)
         exit(1);
     }
 
+    return list + 1 + 8 + 8 + index_value * 8;
+}
+
+/** Set list[index] = value, with arguments all being dynamic */
+void set_element(void *list, void *index, void *value)
+{
+    // 1. Get the list index
+    void **index_ptr = list_index(list, index);
+
     // 3.
     // TODO: garbage collect the previous value
 
     // 4. Set the new value
-    *((void **)(list + 1 + 8 + 8 + index_value * 8)) = value;
+    *index_ptr = value;
 
     // 5. Increment the reference count of the new value
     *((long long *)(value + 1)) += 1;
+}
+
+/** Get a list element and return it */
+void *get_element(void *list, void *index)
+{
+    return *list_index(list, index);
 }
 
 /** Add two dynamic values. If the types are not compatible, the program will exit with an error.
