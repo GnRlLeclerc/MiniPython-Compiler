@@ -114,6 +114,70 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TEbinop e) {
+		// Special case: lazy evaluation for AND and OR
+
+		switch (e.op) {
+			case Band -> {
+					String next = newJmpLabel();
+					// Accept the first value and push it to the stack
+					e.e1.accept(this);
+
+					// Pop it to the 1st argument register
+					x86_64.popq(Regs.RDI);
+
+					// Call the truthy_dynamic extended libc function
+					callExtendedLibc(ExtendedLibc.TRUTHY_DYNAMIC);
+
+					// Compare the value to 0 and finish lazy evaluation if it is 0
+					x86_64.cmpq(0, "9(%rax)");
+					x86_64.jz(next); // If falsy, we can stop right there
+
+					// Else, accept the second value and push it to the stack
+					e.e2.accept(this);
+
+					// Pop it to the 1st argument register
+					x86_64.popq(Regs.RDI);
+
+					// Call the truthy_dynamic extended libc function, we will push the result straight to the stack
+					callExtendedLibc(ExtendedLibc.TRUTHY_DYNAMIC);
+
+					x86_64.label(next);
+					x86_64.pushq(Regs.RAX);
+
+				return;
+			}
+			case Bor -> {
+				String next = newJmpLabel();
+				// Accept the first value and push it to the stack
+				e.e1.accept(this);
+
+				// Pop it to the 1st argument register
+				x86_64.popq(Regs.RDI);
+
+				// Call the truthy_dynamic extended libc function
+				callExtendedLibc(ExtendedLibc.TRUTHY_DYNAMIC);
+
+				// Compare the value to 0 and finish lazy evaluation if it is 1
+				x86_64.cmpq(1, "9(%rax)");
+				x86_64.jz(next); // If truthy, we can stop right there
+
+				// Else, accept the second value and push it to the stack
+				e.e2.accept(this);
+
+				// Pop it to the 1st argument register
+				x86_64.popq(Regs.RDI);
+
+				// Call the truthy_dynamic extended libc function, we will push the result straight to the stack
+				callExtendedLibc(ExtendedLibc.TRUTHY_DYNAMIC);
+
+				x86_64.label(next);
+				x86_64.pushq(Regs.RAX);
+				return;
+			}
+			default -> {}
+		}
+
+
 		// NOTE: constant expressions are already converted to allocated dynamic values.
 		// We can assume that all expressions here are dynamic values.
 
@@ -150,10 +214,6 @@ class Compiler implements TVisitor {
 				callExtendedLibc(ExtendedLibc.EQ_DYNAMIC);
 			case Bneq ->
 				callExtendedLibc(ExtendedLibc.NEQ_DYNAMIC);
-			case Band ->
-				callExtendedLibc(ExtendedLibc.AND_DYNAMIC);
-			case Bor -> 
-				callExtendedLibc(ExtendedLibc.OR_DYNAMIC);
 			case Bge ->
 				callExtendedLibc(ExtendedLibc.GE_DYNAMIC);
 			case Ble ->
