@@ -8,7 +8,8 @@ package mini_python.libc;
 public enum ExtendedLibc {
 
 	PRINTLN_DYNAMIC("println_dynamic"),
-	ADD_DYNAMIC("add_dynamic");
+	ADD_DYNAMIC("add_dynamic"),
+	SUB_DYNAMIC("sub_dynamic");
 	private final String label;
 
 	ExtendedLibc(String label) {

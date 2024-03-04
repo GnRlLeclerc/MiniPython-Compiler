@@ -128,6 +128,9 @@ class Compiler implements TVisitor {
 			case Badd ->
 				// Call the add_dynamic extended libc function
 					callExtendedLibc(ExtendedLibc.ADD_DYNAMIC);
+			case Bsub ->
+				// Call the sub_dynamic extended libc function
+					callExtendedLibc(ExtendedLibc.SUB_DYNAMIC);
 
 
 			default -> throw new Todo("Binop: " + e.op);
