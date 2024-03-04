@@ -461,7 +461,14 @@ class Compiler implements TVisitor {
 
 		// Evaluate the statement
 		if (debug) System.out.println();
-		s.s.accept(this);
+
+		x86_64.pushq(Regs.R14); // Push the index to the stack
+		x86_64.pushq(Regs.R15); // Push the list address to the stack
+
+		s.s.accept(this); // NOTE: this may modify the %r14 and %r15 registers
+
+		x86_64.popq(Regs.R15); // Push the list address to the stack
+		x86_64.popq(Regs.R14); // Push the index to the stack
 
 		// End: jump back to the loop evaluation
 		x86_64.jmp(loop);
