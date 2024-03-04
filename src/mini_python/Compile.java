@@ -92,6 +92,13 @@ class Compile {
 			compiler.x86_64.pushq((i + 2) * 8 + "(%rbp)"); // Push the argument to the stack
 		}
 
+		// Allocate stack space for the local variables of the function		
+		int additionalOffset = def.f.localVariablesOffset + 8 * argCount;
+		if (additionalOffset != 0) {
+			compiler.x86_64.subq("$" + -additionalOffset, Regs.RSP);
+		} 
+
+
 		// Accept the function body. It contains return statements, we do not need to restore the stack frame
 		// and dealloc local variables here, the return statements will handle it in our compiler.
 		compiler.currentFunction = def; // Set the current function reference for cleaning up the correct stack size upon returning.
