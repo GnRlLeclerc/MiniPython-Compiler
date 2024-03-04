@@ -1,8 +1,12 @@
 {
-  "java.format.enabled": true,
-  "java.format.settings.url": "./format.xml",
+  "java.format.enabled": false, // Because no settings match IntelliJ IDEA...
   "[java]": {
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.autoIndent": "advanced",
     "editor.defaultFormatter": "redhat.java"
   },
-  "editor.formatOnSave": true
+  "editor.formatOnSave": true,
+  "java.format.settings.url": "https://raw.githubusercontent.com/sombrero-network/omega/8c694bed445518a3cd27a0e246dc64537042b202/code-formating/eclipse-oxige3a-Java-Code-Formatting.xml",
+  "java.format.settings.profile": "GoogleStyle"
 }

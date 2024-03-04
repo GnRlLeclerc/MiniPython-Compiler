@@ -41,7 +41,6 @@ class Compiler implements TVisitor {
 	@Override
 	public void visit(Cbool c) {
 		// Allocate a new bool dynamic value into %rax
-
 		alloc_bool(c.b);
 
 		// Push it to the stack
@@ -59,8 +58,9 @@ class Compiler implements TVisitor {
 	 */
 	@Override
 	public void visit(Cint c) {
-
-		alloc_int64(c.i); // Allocate and initialize a dynamic value to %rax
+		// Allocate and initialize a dynamic value to %rax
+		alloc_int64(c.i); 
+		
 		x86_64.pushq(Regs.RAX);
 
 		if (debug) {
@@ -183,8 +183,7 @@ class Compiler implements TVisitor {
 
 		// Access a variable value and push it to the stack in order to make it easily
 		// available for the next operation
-		x86_64.movq(e.x.ofs + "(" + Regs.RBP + ")", Regs.RDI);
-		x86_64.pushq(Regs.RDI);
+		x86_64.pushq(e.x.ofs + "(" + Regs.RBP + ")");
 	}
 
 	@Override
@@ -227,12 +226,7 @@ class Compiler implements TVisitor {
 		x86_64.popq(Regs.RSI); // %rsi = index
 		x86_64.popq(Regs.RDI); // %rdi = list address
 
-		// TODO: how to compare list length ? We need to allocate memory for lists and
-		// store their lengths
-
-		// 4. Load the value at the index and push it to the stack
-		x86_64.movq(Regs.RDI, Regs.RDI); // %rdi = list address
-		x86_64.pushq(Regs.RDI);
+		throw new Todo("TEget");
 	}
 
 	@Override
