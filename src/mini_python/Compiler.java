@@ -139,7 +139,8 @@ class Compiler implements TVisitor {
 				callExtendedLibc(ExtendedLibc.GT_DYNAMIC);
 			case Bdiv ->
 				callExtendedLibc(ExtendedLibc.DIV_DYNAMIC);
-			case Bmod -> throw new Todo("Binop: " + e.op);
+			case Bmod ->
+				callExtendedLibc(ExtendedLibc.MOD_DYNAMIC);
 			case Beq -> throw new Todo("Binop: " + e.op);
 			case Band -> throw new Todo("Binop: " + e.op);
 			case Bor -> throw new Todo("Binop: " + e.op);

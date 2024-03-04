@@ -530,6 +530,43 @@ void *div_dynamic(void *value1, void *value2)
     return result;
 }
 
+/** Get the modulus of two dynamic values. If the types are not compatible, the program will exit with an error.
+ */
+void *mod_dynamic(void *value1, void *value2)
+{
+    // compatible : int & bool
+    // none is never compatible
+
+    void *result = NULL;
+
+    switch (combined_type(value1, value2))
+    {
+    // Boolean and integer addition.
+    case BOOL_BOOL:
+    case BOOL_INT64:
+    case INT64_BOOL:
+    case INT64_INT64:
+        // TODO: detect if one of the input values is a temporary one, and reuse it
+        // TODO: garbage collect the other input value if both are temporary
+        if (*((long long *)(value2 + 1 + 8)) == 0)
+        {
+            printf("ZeroDivisionError: modulo by zero\n");
+            exit(1);
+        }
+        result = allocate_int64();
+        *((long long *)(result + 1 + 8)) = *((long long *)(value1 + 1 + 8)) % *((long long *)(value2 + 1 + 8));
+        break;
+
+    default:
+        // Default: unsupported types
+        printf("TypeError: unsupported operand type(s) for \%: '%s' and '%s'\n", value_label(value1), value_label(value2));
+        exit(1);
+        break;
+    }
+
+    return result;
+}
+
 /** Compute the not operation for a value. If the type is incompatible, the program will exit with an error */
 void *not_dynamic(void *value)
 {

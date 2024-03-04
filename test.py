@@ -11,6 +11,6 @@ b = 3
 c = 2
 d = 0
 
-print(b // a)
-print(b // c)
-print(c // d)
+print(b % a)
+print(b % c)
+print(c % d)
