@@ -251,6 +251,53 @@ static inline char combined_type(void *value1, void *value2)
     return (type_value(value1) << 3) + type_value(value2);
 }
 
+static inline int is_equal(void *value1, void *value2)
+{
+    switch (combined_type(value1, value2))
+    {
+    // Boolean and integer addition.
+    case BOOL_BOOL:
+    case BOOL_INT64:
+    case INT64_BOOL:
+    case INT64_INT64:
+        return *((long long *)(value1 + 1 + 8)) == *((long long *)(value2 + 1 + 8));
+    case STRING_STRING:
+    {
+        return strcmp((char *)(value1 + 1 + 8 + 8), (char *)(value2 + 1 + 8 + 8)) == 0;
+    }
+    case LIST_LIST:
+    {
+        long long size1 = *((long long *)(value1 + 1 + 8));
+        long long size2 = *((long long *)(value2 + 1 + 8));
+        int result = 1;
+
+        if (size1 != size2)
+        {
+            result = 0;
+        }
+        else
+        {
+            for (long long i = 0; i < size1; i++)
+            {
+                void *elem1 = *((void **)(value1 + 1 + 8 + 8 + i * 8));
+                void *elem2 = *((void **)(value2 + 1 + 8 + 8 + i * 8));
+
+                if (!is_equal(elem1, elem2))
+                {
+                    result = 0;
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
+    default:
+        return 0;
+        break;
+    }
+}
+
 /** Computes the list address corresponding to the index.
  * Does the type and boundary checks
  */
@@ -689,56 +736,8 @@ void *or_dynamic(void *value1, void *value2)
 void *eq_dynamic(void *value1, void *value2)
 {
     // compatible : all types
-
     void *result = allocate_bool();
-
-    switch (combined_type(value1, value2))
-    {
-    // Boolean and integer addition.
-    case BOOL_BOOL:
-    case BOOL_INT64:
-    case INT64_BOOL:
-    case INT64_INT64:
-        *((long long *)(result + 1 + 8)) = *((long long *)(value1 + 1 + 8)) == *((long long *)(value2 + 1 + 8));
-        break;
-
-    case STRING_STRING:
-    {
-        *((long long *)(result + 1 + 8)) = strcmp((char *)(value1 + 1 + 8 + 8), (char *)(value2 + 1 + 8 + 8)) == 0;
-        break;
-    }
-    case LIST_LIST:
-    {
-        long long size1 = *((long long *)(value1 + 1 + 8));
-        long long size2 = *((long long *)(value2 + 1 + 8));
-        *((long long *)(result + 1 + 8)) = 1;
-
-        if (size1 != size2)
-        {
-            *((long long *)(result + 1 + 8)) = 0;
-        }
-        else
-        {
-            for (long long i = 0; i < size1; i++)
-            {
-                void *elem1 = *((void **)(value1 + 1 + 8 + 8 + i * 8));
-                void *elem2 = *((void **)(value2 + 1 + 8 + 8 + i * 8));
-
-                if (*((long long *)(elem1 + 1)) != *((long long *)(elem2 + 1)))
-                {
-                    *((long long *)(result + 1 + 8)) = 0;
-                    break;
-                }
-            }
-        }
-        break;
-    }
-
-    default:
-        *((long long *)(result + 1 + 8)) = 0;
-        break;
-    }
-
+    *((long long *)(result + 1 + 8)) = is_equal(value1, value2);
     return result;
 }
 

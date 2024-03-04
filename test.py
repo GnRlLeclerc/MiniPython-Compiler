@@ -8,7 +8,7 @@ def print_all(a, b, c, d, e):
 
 a = "a"
 x = [a]
-y = ["b"]
+y = ["a"]
 z = [a]
 
 print(x + y)
