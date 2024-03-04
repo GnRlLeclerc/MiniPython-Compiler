@@ -52,7 +52,6 @@ enum Binop {
 
 		// Ordering operations : the types must be coerccible together
 		Type type = type1.coerce(type2);
-		System.out.println("Coercing " + type1 + " and " + type2 + " to " + type + " for operation " + this);
 		if (type != null && (this == Blt || this == Ble || this == Bgt || this == Bge)) {
 			return Type.BOOL;
 		}
@@ -61,16 +60,12 @@ enum Binop {
 			return type;
 		}
 
-		if ((type == Type.BOOL || type == Type.INT64) && this == Bsub) {
-			return Type.INT64;
-		}
-
 		// NOTE: we do not fully implement all python operations. The following can only
 		// be done with int-type operands
-		if ((type == Type.INT64 || type == Type.BOOL) && (this == Bmul || this == Bdiv || this == Bmod)) {
+		if ((type == Type.BOOL || type == Type.INT64 || type == Type.DYNAMIC) && (this == Bmul || this == Bdiv || this == Bmod || this == Bsub)) {
 			return Type.INT64;
 		}
-
+		
 		return null; // Default output: coercion failed
 	}
 }
@@ -688,7 +683,7 @@ class Function {
 	Function(String name, LinkedList<Variable> params) {
 		this.name = name;
 		this.params = params;
-		this.returnType = Type.NONETYPE; // By default
+		this.returnType = Type.DYNAMIC; // By default (we cannot assume what it will be)
 		this.localVariablesOffset = 0; // Offset for local variables.
 		// We do not initialize it to - len * 8 here because we need to assign the offset to the `Variable` objects too
 	}

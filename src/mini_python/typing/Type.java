@@ -42,7 +42,21 @@ public enum Type {
 		if ((this == INT64 && other == BOOL) || (this == BOOL && other == INT64)) {
 			return INT64;
 		}
-		
+
 		return null; // Default output: coercion failed
+	}
+
+	/**
+	 * Returns the byte value used to represent the type in allocated memory
+	 */
+	public int typeTag() {
+		return switch (this) {
+			case NONETYPE -> 0;
+			case BOOL -> 1;
+			case INT64 -> 2;
+			case STRING -> 3;
+			case LIST -> 4;
+			default -> throw new Error("Type " + this.name + " does not have a type tag");
+		};
 	}
 }
