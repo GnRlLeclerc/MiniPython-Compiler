@@ -10,3 +10,5 @@ x = ["a"]
 y = ["b"]
 
 print(x + y)
+print(x * 2)
+print(2 * y)

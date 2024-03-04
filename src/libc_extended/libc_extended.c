@@ -14,9 +14,11 @@
 #define INT64_BOOL 17
 #define INT64_INT64 18
 #define INT64_STRING 19
+#define INT64_LIST 20
 #define STRING_INT64 26
 #define STRING_STRING 27
 #define LIST_LIST 36
+#define LIST_INT64 34
 
 // WARNING: static inline functions are abstracted away and cannot be called by other modules, like our asm code !
 
@@ -509,6 +511,36 @@ void *mul_dynamic(void *value1, void *value2)
         break;
     }
     case INT64_STRING:
+    {
+        result = mul_dynamic(value2, value1);
+        break;
+    }
+    case LIST_INT64:
+    {
+        // TODO: garbage collect the 2 operands. We allocate a new list.
+        // Compute output size
+        if (*((long long *)(value2 + 1 + 8)) > 0)
+        {
+            long long size = *((long long *)(value1 + 1 + 8)) * *((long long *)(value2 + 1 + 8));
+            result = allocate_list(size);
+
+            for (long long i = 0; i < *((long long *)(value2 + 1 + 8)); i++)
+            {
+                for (long long j = 0; j < *((long long *)(value1 + 1 + 8)); j++)
+                {
+                    *((void **)(result + 1 + 8 + 8 + i * *((long long *)(value1 + 1 + 8)) * 8 + j * 8)) = *((void **)(value1 + 1 + 8 + 8 + j * 8));
+                    *((long long *)(*((void **)(result + 1 + 8 + 8 + i * *((long long *)(value1 + 1 + 8)) * 8 + j * 8)) + 1)) += 1;
+                }
+            }
+        }
+        else
+        {
+            result = allocate_list(0);
+        }
+
+        break;
+    }
+    case INT64_LIST:
     {
         result = mul_dynamic(value2, value1);
         break;

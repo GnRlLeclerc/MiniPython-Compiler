@@ -69,6 +69,10 @@ enum Binop {
 		if (((type1 == Type.STRING && type2 == Type.INT64) || (type2 == Type.STRING && type1 == Type.INT64)) && (this == Bmul)) {
 			return Type.STRING;
 		}
+
+		if (((type1 == Type.LIST && type2 == Type.INT64) || (type2 == Type.LIST && type1 == Type.INT64)) && (this == Bmul)) {
+			return Type.LIST;
+		}
 		
 		return null; // Default output: coercion failed
 	}
