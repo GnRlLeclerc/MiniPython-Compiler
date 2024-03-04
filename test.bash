@@ -146,16 +146,30 @@ echo "-------------------------------"
 
 # timeout="why3-cpulimit 30 0 -h"
 
+########################### ADDED ###########################
+# Compile the extended libc
+make libc
+
+compile_and_link () {
+    # Compile the assembly into an intermediary object file
+    gcc -O3 -c $1 -o bin/test.o
+
+    # Link the object file with the extended libc
+    gcc -O3 -no-pie bin/test.o -L./bin/libc_extended -llibc_extended
+}
+########################### ADDED ###########################
+
+
 for f in tests/exec/*.py; do
     echo -n "."
-    asm=exec/`basename $f .py`.s
+    asm=tests/exec/`basename $f .py`.s
     rm -f $asm
-    expected=exec/`basename $f .py`.out
+    expected=tests/exec/`basename $f .py`.out
     max=`expr $max + 1`;
     if compile $f; then
 	rm -f out
 	score_comp=`expr $score_comp + 1`;
-	if gcc -no-pie $asm && ./a.out > out; then
+	if compile_and_link $asm && ./a.out > out; then
 	    score_out=`expr $score_out + 1`;
 	    if cmp --quiet out $expected; then
 		score_test=`expr $score_test + 1`;
@@ -179,10 +193,10 @@ echo "------------------------------"
 
 for f in  tests/exec-fail/*.py; do
     echo -n "."
-    asm=exec-fail/`basename $f .py`.s
+    asm=tests/exec-fail/`basename $f .py`.s
     rm -f $asm
     max=`expr $max + 1`;
-    if compile $f && gcc -no-pie $asm; then
+    if compile $f && compile_and_link $asm; then
 	score_comp=`expr $score_comp + 1`;
 	if { ./a.out > out; } >& /dev/null; then
 	    echo
