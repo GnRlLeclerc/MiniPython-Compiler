@@ -10,7 +10,11 @@ a = True
 b = 3
 c = 2
 d = 0
+t = ""
+x = []
 
-print(b % a)
-print(b % c)
-print(c % d)
+print(not a)
+print(not b)
+print(not d)
+print(not x)
+print(not t)

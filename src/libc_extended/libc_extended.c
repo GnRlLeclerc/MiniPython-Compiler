@@ -567,8 +567,8 @@ void *mod_dynamic(void *value1, void *value2)
     return result;
 }
 
-/** Compute the not operation for a value. If the type is incompatible, the program will exit with an error */
-void *not_dynamic(void *value)
+/** Compute the truthyness of a value. If the type is incompatible, the program will exit with an error */
+void *truthy_dynamic(void *value)
 {
     // Compatible: all types can be coerced to a truthy or falsy value
 
@@ -577,21 +577,29 @@ void *not_dynamic(void *value)
     switch (type_value(value))
     {
     case BOOL:
-        *((long long *)(result + 1 + 8)) = !(*((long long *)(value + 1 + 8)));
+        *((long long *)(result + 1 + 8)) = (*((long long *)(value + 1 + 8)));
         break;
     case INT64:
-        *((long long *)(result + 1 + 8)) = (*((long long *)(value + 1 + 8)) == 0); // Value == 0
+        *((long long *)(result + 1 + 8)) = (*((long long *)(value + 1 + 8)) != 0); // Value != 0
         break;
     case STRING:
     case LIST:
-        *((long long *)(result + 1 + 8)) = (*((long long *)(value + 1 + 8)) == 0); // Length == 0
+        *((long long *)(result + 1 + 8)) = (*((long long *)(value + 1 + 8)) != 0); // Length != 0
         break;
     default:
         // Default: unsupported types
-        printf("TypeError: unsupported operand type for not: '%s'\n", value_label(value));
+        printf("TypeError: unsupported operand type for boolean valuation: '%s'\n", value_label(value));
         exit(1);
         break;
     }
 
+    return result;
+}
+
+/** Compute the not operation for a value. If the type is incompatible, the program will exit with an error */
+void *not_dynamic(void *value)
+{
+    void *result = truthy_dynamic(value);
+    *((long long *)(result + 1 + 8)) = !(*((long long *)(result + 1 + 8)));
     return result;
 }
