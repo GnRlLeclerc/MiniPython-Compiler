@@ -290,6 +290,7 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TErange e) {
+		throw new Todo("TErange");
 	}
 
 	// ******************************************** STATEMENT VISIT ************************************************* //
@@ -413,8 +414,49 @@ class Compiler implements TVisitor {
 	}
 
 	@Override
-	public void visit(TSfor s) {		
-		throw new Todo("TSfor");
+	public void visit(TSfor s) {
+
+		if(debug) {
+			System.out.println("For loop evaluation\n");
+		}
+
+		// Create labels
+		String loop = newJmpLabel();
+		String continue_loop = newJmpLabel();
+		String next = newJmpLabel();
+
+		// Evaluate the list and push it to the stack
+		s.e.accept(this);
+
+		// NOTE: we use the callee-saved register %r14 in order to keep track of the current index
+		// NOTE: we use the callee-saved register %r15 in order to keep track of the current list address
+		// We do not use this register anywhere else in the code.
+		x86_64.movq(0, Regs.R14); // Initialize the index to 0
+		x86_64.popq(Regs.R15); // Pop the list address to %r15
+		x86_64.label(loop);
+
+		// Compare the current index to the list length
+		x86_64.cmpq("9(%r15)", Regs.R14); // Compare the index to the list length
+		x86_64.jl(continue_loop); // If index < length, continue the loop
+		x86_64.jmp(next); // Jump to the next statement
+		x86_64.label(continue_loop);
+
+		// Alias the list value to the iteration variable
+		x86_64.leaq("17(%r15, %r14, 8)", Regs.RDI); // Load the element address to the iteration variable
+		x86_64.movq("(%rdi)", Regs.RDI);
+		x86_64.movq(Regs.RDI, s.x.ofs + "(%rbp)");
+
+
+		// Increment the index
+		x86_64.incq(Regs.R14);
+
+		// Evaluate the statement
+		if (debug) System.out.println();
+		s.s.accept(this);
+
+		// End: jump back to the loop evaluation
+		x86_64.jmp(loop);
+		x86_64.label(next);
 	}
 
 	// Helper methods

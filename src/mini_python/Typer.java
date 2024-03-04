@@ -1,9 +1,13 @@
 package mini_python;
 
-import mini_python.typing.Type;
-
 import java.io.Serial;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Set;
+
+import mini_python.typing.Type;
 
 // the following exception is used whenever you have to implement something
 class Todo extends Error {
@@ -212,9 +216,9 @@ class Typer implements Visitor {
 	public void visit(Sfor s) {
 		// Reuse or create the variable used to contain the loop output
 		Variable v = this.getOrCreateVar(s.x.id);
-
-		s.e.accept(this);
 		s.s.accept(this);
+		s.e.accept(this);
+		
 		this.currStmt = new TSfor(v, this.currExpr, this.currStmt);
 	}
 
