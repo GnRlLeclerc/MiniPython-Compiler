@@ -78,8 +78,8 @@ class Compile {
 		compiler.x86_64.pushq(Regs.RBP);
 		compiler.x86_64.movq(Regs.RSP, Regs.RBP);
 
-		// Allocate space for the local variables of the function on the stack
-		compiler.x86_64.subq("$" + -def.f.localVariablesOffset, Regs.RSP);
+		// We do not preallocate stack space, as we will just push values from the argument stack frame
+		// to the local function parameter stack frame.
 
 		// Move all arguments to the stack frame that we just allocated
 		int argCount = def.f.params.size();
@@ -88,10 +88,8 @@ class Compile {
 		// (so that depending on our optimization strategy, we have the choice to reuse the previous stack frame,
 		// with arguments having their absolute stack frame offset always increasing in the order of arguments).
 		for (int i = 0; i < argCount; i++) {
-			// NOTE: movq cannot directly move from one stack position to another. If we reused the previous stack frame,
-			// we would save arg_count * 2 instructions ! We use %rax as a temporary register to move the arguments.
-			compiler.x86_64.movq((i + 2) * 8 + "(%rbp)", Regs.RAX);
-			compiler.x86_64.movq(Regs.RAX, -(1 + i) * 8 + "(%rbp)");
+			// NOTE: if we reused the previous stack frame, we would save <arg_count> instructions.
+			compiler.x86_64.pushq((i + 2) * 8 + "(%rbp)"); // Push the argument to the stack
 		}
 
 		// Accept the function body. It contains return statements, we do not need to restore the stack frame
