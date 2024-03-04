@@ -16,3 +16,5 @@ x = []
 print(not a)
 print(a and b)
 print(a and x)
+print(a or x)
+print(t or x)

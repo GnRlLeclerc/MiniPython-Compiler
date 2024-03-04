@@ -612,3 +612,11 @@ void *and_dynamic(void *value1, void *value2)
     *((long long *)(result + 1 + 8)) = is_truthy(value1) && is_truthy(value2);
     return result;
 }
+
+/** Compute the or operation for two values. If the types are incompatible, the program will exit with an error */
+void *or_dynamic(void *value1, void *value2)
+{
+    void *result = allocate_bool();
+    *((long long *)(result + 1 + 8)) = is_truthy(value1) || is_truthy(value2);
+    return result;
+}

@@ -13,6 +13,7 @@ public enum ExtendedLibc {
 	DIV_DYNAMIC("div_dynamic"),
 	MOD_DYNAMIC("mod_dynamic"),
 	AND_DYNAMIC("and_dynamic"),
+	OR_DYNAMIC("or_dynamic"),
 	MUL_DYNAMIC("mul_dynamic"),
 	NOT_DYNAMIC("not_dynamic"),
 	NEG_DYNAMIC("neg_dynamic"),
