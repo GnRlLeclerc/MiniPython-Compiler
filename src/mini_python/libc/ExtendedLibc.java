@@ -21,6 +21,7 @@ public enum ExtendedLibc {
 	GT_DYNAMIC("gt_dynamic"),
 	GE_DYNAMIC("ge_dynamic"),
 	GET_ELEMENT("get_element"),
+	TRUTHY_DYNAMIC("truthy_dynamic"),
 	SET_ELEMENT("set_element");
 	
 	private final String label;

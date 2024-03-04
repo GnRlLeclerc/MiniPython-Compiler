@@ -15,6 +15,7 @@ class Compiler implements TVisitor {
 
 	X86_64 x86_64;
 	int cstId = 0;
+	int jmpLabelId = 0;
 
 	Compiler() {
 		this.x86_64 = new X86_64();
@@ -25,6 +26,10 @@ class Compiler implements TVisitor {
 
 	private String newCstLabel() {
 		return "cst" + this.cstId++;
+	}
+
+	private String newJmpLabel() {
+		return "jmp_" + this.jmpLabelId++;
 	}
 
 	@Override
@@ -289,7 +294,36 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TSif s) {
-		throw new Todo("TSif");
+		// Define labels
+		String falsy = newJmpLabel();
+		String next = newJmpLabel();
+
+		if(debug) {
+			System.out.println("If / Else statement");
+		}
+
+		// Evaluate the expression and push it to the stack
+		s.e.accept(this);
+
+		// Pop it to the 1st argument register
+		x86_64.popq(Regs.RDI);
+
+		callExtendedLibc(ExtendedLibc.TRUTHY_DYNAMIC);
+		
+		// Compare the value to 0 and jump to the else block if it is 0
+		x86_64.cmpq(0, "9(%rax)");
+		x86_64.jz(falsy);
+
+		// Truthy statement
+		s.s1.accept(this);
+		x86_64.jmp(next);
+
+		// Falsy statement
+		x86_64.label(falsy);
+		s.s2.accept(this);
+
+		// Next statement
+		x86_64.label(next);
 	}
 
 	@Override
@@ -376,7 +410,7 @@ class Compiler implements TVisitor {
 	}
 
 	@Override
-	public void visit(TSfor s) {
+	public void visit(TSfor s) {		
 		throw new Todo("TSfor");
 	}
 
