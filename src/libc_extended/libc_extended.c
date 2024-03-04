@@ -223,6 +223,25 @@ static inline char type_value(void *value)
     return *((char *)value);
 }
 
+/** Compute the truthyness of a value */
+static inline int is_truthy(void *value)
+{
+    switch (type_value(value))
+    {
+    case BOOL:
+    case INT64:
+    case STRING:
+    case LIST:
+        return (*((long long *)(value + 1 + 8))) != 0;
+        break;
+    default:
+        // Default: unsupported types
+        printf("TypeError: unsupported operand type for boolean valuation: '%s'\n", value_label(value));
+        exit(1);
+        break;
+    }
+}
+
 /** Combine 2 byte types by multiplying the first by 8 and adding the second.
  * This is a fast way to switch through all possible combinations of types.
  * Because our tags do not go over 4 bits, the result fits in a byte too.
@@ -630,24 +649,6 @@ void *mod_dynamic(void *value1, void *value2)
     return result;
 }
 
-static inline int is_truthy(void *value)
-{
-    switch (type_value(value))
-    {
-    case BOOL:
-    case INT64:
-    case STRING:
-    case LIST:
-        return (*((long long *)(value + 1 + 8))) != 0;
-        break;
-    default:
-        // Default: unsupported types
-        printf("TypeError: unsupported operand type for boolean valuation: '%s'\n", value_label(value));
-        exit(1);
-        break;
-    }
-}
-
 /** Compute the truthyness of a value. If the type is incompatible, the program will exit with an error */
 void *truthy_dynamic(void *value)
 {
@@ -708,7 +709,28 @@ void *eq_dynamic(void *value1, void *value2)
     }
     case LIST_LIST:
     {
-        *((long long *)(result + 1 + 8)) = value1 == value2;
+        long long size1 = *((long long *)(value1 + 1 + 8));
+        long long size2 = *((long long *)(value2 + 1 + 8));
+        *((long long *)(result + 1 + 8)) = 1;
+
+        if (size1 != size2)
+        {
+            *((long long *)(result + 1 + 8)) = 0;
+        }
+        else
+        {
+            for (long long i = 0; i < size1; i++)
+            {
+                void *elem1 = *((void **)(value1 + 1 + 8 + 8 + i * 8));
+                void *elem2 = *((void **)(value2 + 1 + 8 + 8 + i * 8));
+
+                if (*((long long *)(elem1 + 1)) != *((long long *)(elem2 + 1)))
+                {
+                    *((long long *)(result + 1 + 8)) = 0;
+                    break;
+                }
+            }
+        }
         break;
     }
 

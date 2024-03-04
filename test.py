@@ -6,9 +6,12 @@ def print_all(a, b, c, d, e):
     print(e)
 
 
-x = ["a"]
+a = "a"
+x = [a]
 y = ["b"]
+z = [a]
 
 print(x + y)
 print(x * 2)
-print(2 * y)
+print(x == z)
+print(x == y)
