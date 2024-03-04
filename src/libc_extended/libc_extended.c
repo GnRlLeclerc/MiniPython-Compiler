@@ -657,3 +657,11 @@ void *eq_dynamic(void *value1, void *value2)
 
     return result;
 }
+
+/** Compute the != operation for two values. If the types are incompatible, the program will exit with an error */
+void *neq_dynamic(void *value1, void *value2)
+{
+    void *result = eq_dynamic(value1, value2);
+    *((long long *)(result + 1 + 8)) = !(*((long long *)(result + 1 + 8)));
+    return result;
+}
