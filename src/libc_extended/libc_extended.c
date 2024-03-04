@@ -218,6 +218,36 @@ static inline char combined_type(void *value1, void *value2)
     return (type_value(value1) << 3) + type_value(value2);
 }
 
+/** Set list[index] = value, with arguments all being dynamic */
+void set_element(void *list, void *index, void *value)
+{
+    // 1. Check that the index has the right type
+    if (type_value(index) != INT64 && type_value(index) != BOOL)
+    {
+        printf("TypeError: list indices must be integers, not %s\n", value_label(index));
+        exit(1);
+    }
+
+    // 2. Check that the index is within the list bounds
+    long long list_size = *((long long *)(list + 1 + 8));
+    long long index_value = *((long long *)(index + 1 + 8));
+
+    if (index_value < 0 || index_value >= list_size)
+    {
+        printf("IndexError: list assignment index %lld out of range for size %lld\n", index_value, list_size);
+        exit(1);
+    }
+
+    // 3.
+    // TODO: garbage collect the previous value
+
+    // 4. Set the new value
+    *((void **)(list + 1 + 8 + 8 + index_value * 8)) = value;
+
+    // 5. Increment the reference count of the new value
+    *((long long *)(value + 1)) += 1;
+}
+
 /** Add two dynamic values. If the types are not compatible, the program will exit with an error.
  */
 void *add_dynamic(void *value1, void *value2)

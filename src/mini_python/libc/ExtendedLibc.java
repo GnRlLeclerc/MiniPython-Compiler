@@ -12,7 +12,8 @@ public enum ExtendedLibc {
 	SUB_DYNAMIC("sub_dynamic"),
 	NOT_DYNAMIC("not_dynamic"),
 	NEG_DYNAMIC("neg_dynamic"),
-	LT_DYNAMIC("lt_dynamic");
+	LT_DYNAMIC("lt_dynamic"),
+	SET_ELEMENT("set_element");
 	
 	private final String label;
 

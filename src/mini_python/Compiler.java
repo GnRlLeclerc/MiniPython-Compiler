@@ -246,9 +246,12 @@ class Compiler implements TVisitor {
 		alloc_list(size); // Allocate the list and set its address to %rax
 
 		// Pop all values to the list in reverse order (the last element is currently the first on the stack)
+		// We also increment their reference count
 		for (int i = 0; i < size; i++) {
 			// Skip the 1 + 8 + 8 bytes of the tag, ref count, and length
-			x86_64.popq(((size - i - 1) * 8 + 17) + "(" + Regs.RAX + ")");
+			x86_64.popq(Regs.RDI); // %rdi = element address
+			x86_64.incq("1(" + Regs.RDI + ")"); // Increment the reference count
+			x86_64.movq(Regs.RDI, ((size - i - 1) * 8 + 17) + "(" + Regs.RAX + ")");
 		}
 
 		// Push the list address to the stack
@@ -365,7 +368,19 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TSset s) {
-		throw new Todo("TSet");
+		// TODO: garbage collect the previous value (and decrement its reference count)
+
+		// Accept all statements and push them to the stack
+		s.e1.accept(this); // List address
+		s.e2.accept(this); // List index
+		s.e3.accept(this); // Value
+
+		x86_64.popq(Regs.RDX); // Value to %rdx (3rd argument)
+		x86_64.popq(Regs.RSI); // Index to %rsi. This must be a dynamic int64 or bool value (2nd argument)
+		x86_64.popq(Regs.RDI); // List address to %rdi (1st argument)
+
+		// Call the set_element extended libc function
+		callExtendedLibc(ExtendedLibc.SET_ELEMENT);
 	}
 
 	// ************************************************************************************************************** //
