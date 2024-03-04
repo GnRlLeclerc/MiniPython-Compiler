@@ -14,7 +14,5 @@ t = ""
 x = []
 
 print(not a)
-print(not b)
-print(not d)
-print(not x)
-print(not t)
+print(a and b)
+print(a and x)

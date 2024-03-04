@@ -8,5 +8,9 @@
   },
   "editor.formatOnSave": true,
   "java.format.settings.url": "https://raw.githubusercontent.com/sombrero-network/omega/8c694bed445518a3cd27a0e246dc64537042b202/code-formating/eclipse-oxige3a-Java-Code-Formatting.xml",
-  "java.format.settings.profile": "GoogleStyle"
+  "java.format.settings.profile": "GoogleStyle",
+  "files.associations": {
+    "*.pug": "jade",
+    "type_traits": "c"
+  }
 }

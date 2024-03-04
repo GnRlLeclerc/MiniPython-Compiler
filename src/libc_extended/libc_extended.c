@@ -567,24 +567,15 @@ void *mod_dynamic(void *value1, void *value2)
     return result;
 }
 
-/** Compute the truthyness of a value. If the type is incompatible, the program will exit with an error */
-void *truthy_dynamic(void *value)
+static inline int is_truthy(void *value)
 {
-    // Compatible: all types can be coerced to a truthy or falsy value
-
-    void *result = allocate_bool();
-
     switch (type_value(value))
     {
     case BOOL:
-        *((long long *)(result + 1 + 8)) = (*((long long *)(value + 1 + 8)));
-        break;
     case INT64:
-        *((long long *)(result + 1 + 8)) = (*((long long *)(value + 1 + 8)) != 0); // Value != 0
-        break;
     case STRING:
     case LIST:
-        *((long long *)(result + 1 + 8)) = (*((long long *)(value + 1 + 8)) != 0); // Length != 0
+        return (*((long long *)(value + 1 + 8))) != 0;
         break;
     default:
         // Default: unsupported types
@@ -592,6 +583,16 @@ void *truthy_dynamic(void *value)
         exit(1);
         break;
     }
+}
+
+/** Compute the truthyness of a value. If the type is incompatible, the program will exit with an error */
+void *truthy_dynamic(void *value)
+{
+    // Compatible: all types can be coerced to a truthy or falsy value
+
+    void *result = allocate_bool();
+
+    *((long long *)(result + 1 + 8)) = is_truthy(value);
 
     return result;
 }
@@ -601,5 +602,13 @@ void *not_dynamic(void *value)
 {
     void *result = truthy_dynamic(value);
     *((long long *)(result + 1 + 8)) = !(*((long long *)(result + 1 + 8)));
+    return result;
+}
+
+/** Compute the and operation for two values. If the types are incompatible, the program will exit with an error */
+void *and_dynamic(void *value1, void *value2)
+{
+    void *result = allocate_bool();
+    *((long long *)(result + 1 + 8)) = is_truthy(value1) && is_truthy(value2);
     return result;
 }
