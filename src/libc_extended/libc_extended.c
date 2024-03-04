@@ -16,12 +16,12 @@
 
 #define STRING_STRING 27
 
-// WARNING: inline functions are abstracted away and cannot be called by other modules, like our asm code !
+// WARNING: static inline functions are abstracted away and cannot be called by other modules, like our asm code !
 
 // ************************************************** PRINTING ****************************************************** //
 
 /** Print the input value (int64 representation of a boolean) in Python boolean format */
-inline void println_bool(long long value)
+static inline void println_bool(long long value)
 {
     if (value == 0)
     {
@@ -34,24 +34,24 @@ inline void println_bool(long long value)
 }
 
 /** Print an integer value */
-inline void println_int64(long long value)
+static inline void println_int64(long long value)
 {
     printf("%lld\n", value);
 }
 
 /** Print a string value */
-inline void println_string(const char *value)
+static inline void println_string(const char *value)
 {
     printf("%s\n", value);
 }
 
 /** Print None */
-inline void println_none()
+static inline void println_none()
 {
     printf("None\n");
 }
 
-inline char *type_label(char type)
+static inline char *type_label(char type)
 {
     switch (type)
     {
@@ -70,7 +70,7 @@ inline char *type_label(char type)
     }
 }
 
-inline char *value_label(void *value)
+static inline char *value_label(void *value)
 {
     return type_label(*((char *)value));
 }
@@ -106,7 +106,7 @@ void println_dynamic(void *value)
 // ************************************************* ALLOCATION ***************************************************** //
 
 /** Allocate an empty bool value */
-inline void *allocate_bool()
+static inline void *allocate_bool()
 {
     void *value = malloc(1 + 8 + 8); // 1 byte tag, 8 bytes ref_count, 8 bytes value
     *((char *)value) = BOOL;
@@ -115,7 +115,7 @@ inline void *allocate_bool()
 }
 
 /** Allocate an empty int64 value */
-inline void *allocate_int64()
+static inline void *allocate_int64()
 {
     void *value = malloc(1 + 8 + 8); // 1 byte tag, 8 bytes ref_count, 8 bytes value
     *((char *)value) = INT64;
@@ -126,7 +126,7 @@ inline void *allocate_int64()
 // ************************************************ COMPUTATION ***************************************************** //
 
 /** Allocate an empty string value with a given size */
-inline void *allocate_string(long long size)
+static inline void *allocate_string(long long size)
 {
     void *value = malloc(1 + 8 + 8 + size); // 1 byte tag, 8 bytes ref_count, 8 bytes size, size bytes string
     *((char *)value) = STRING;              // Set the tag
@@ -139,7 +139,7 @@ inline void *allocate_string(long long size)
  * This is a fast way to switch through all possible combinations of types.
  * Because our tags do not go over 4 bits, the result fits in a byte too.
  */
-inline char combined_type(void *value1, void *value2)
+static inline char combined_type(void *value1, void *value2)
 {
     return (*((char *)value1) << 3) + *((char *)value2);
 }

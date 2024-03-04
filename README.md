@@ -23,6 +23,13 @@ make compile
 ./test
 ```
 
+The followings are shortcuts for compiling our assembly code and lib with debug symbols or with optimizations:
+
+```bash
+make release
+make debug
+```
+
 ## Project Structure
 
 ```bash
