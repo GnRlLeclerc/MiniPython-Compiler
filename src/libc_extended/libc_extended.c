@@ -205,6 +205,16 @@ static inline void *allocate_string(long long size)
     return value;
 }
 
+/** Allocate an empty list value with a given size */
+static inline void *allocate_list(long long size)
+{
+    void *value = malloc(1 + 8 + 8 + size * 8); // 1 byte tag, 8 bytes ref_count, 8 bytes size, size bytes string
+    *((char *)value) = LIST;                    // Set the tag
+    *((long long *)(value + 1)) = 0;            // ref_count (0 by default for a temporary value)
+    *((long long *)(value + 1 + 8)) = size;     // string size
+    return value;
+}
+
 /** Extract the type value from a value */
 static inline char type_value(void *value)
 {
@@ -301,6 +311,26 @@ void *add_dynamic(void *value1, void *value2)
         strcpy((char *)(result + 1 + 8 + 8), (char *)(value1 + 1 + 8 + 8));
         // Append the second string
         strcat((char *)(result + 1 + 8 + 8), (char *)(value2 + 1 + 8 + 8));
+        break;
+    }
+    case LIST_LIST:
+    {
+        long long size = *((long long *)(value1 + 1 + 8)) + *((long long *)(value2 + 1 + 8));
+        result = allocate_list(size);
+
+        // Copy the first list
+        for (long long i = 0; i < *((long long *)(value1 + 1 + 8)); i++)
+        {
+            *((void **)(result + 1 + 8 + 8 + i * 8)) = *((void **)(value1 + 1 + 8 + 8 + i * 8));
+            *((long long *)(*((void **)(result + 1 + 8 + 8 + i * 8)) + 1)) += 1;
+        }
+
+        // Copy the second list
+        for (long long i = 0; i < *((long long *)(value2 + 1 + 8)); i++)
+        {
+            *((void **)(result + 1 + 8 + 8 + (*((long long *)(value1 + 1 + 8)) + i) * 8)) = *((void **)(value2 + 1 + 8 + 8 + i * 8));
+            *((long long *)(*((void **)(result + 1 + 8 + 8 + (*((long long *)(value1 + 1 + 8)) + i) * 8)) + 1)) += 1;
+        }
         break;
     }
 
