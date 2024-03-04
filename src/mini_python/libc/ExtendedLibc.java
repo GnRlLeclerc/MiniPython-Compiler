@@ -17,6 +17,7 @@ public enum ExtendedLibc {
 	MUL_DYNAMIC("mul_dynamic"),
 	NOT_DYNAMIC("not_dynamic"),
 	NEG_DYNAMIC("neg_dynamic"),
+	EQ_DYNAMIC("eq_dynamic"),
 	LT_DYNAMIC("lt_dynamic"),
 	LE_DYNAMIC("le_dynamic"),
 	GT_DYNAMIC("gt_dynamic"),

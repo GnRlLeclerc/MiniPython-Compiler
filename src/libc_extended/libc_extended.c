@@ -16,6 +16,7 @@
 #define INT64_STRING 19
 #define STRING_INT64 26
 #define STRING_STRING 27
+#define LIST_LIST 36
 
 // WARNING: static inline functions are abstracted away and cannot be called by other modules, like our asm code !
 
@@ -618,5 +619,41 @@ void *or_dynamic(void *value1, void *value2)
 {
     void *result = allocate_bool();
     *((long long *)(result + 1 + 8)) = is_truthy(value1) || is_truthy(value2);
+    return result;
+}
+
+/** Compute the == operation for two values. If the types are incompatible, the program will exit with an error */
+void *eq_dynamic(void *value1, void *value2)
+{
+    // compatible : all types
+
+    void *result = allocate_bool();
+
+    switch (combined_type(value1, value2))
+    {
+    // Boolean and integer addition.
+    case BOOL_BOOL:
+    case BOOL_INT64:
+    case INT64_BOOL:
+    case INT64_INT64:
+        *((long long *)(result + 1 + 8)) = *((long long *)(value1 + 1 + 8)) == *((long long *)(value2 + 1 + 8));
+        break;
+
+    case STRING_STRING:
+    {
+        *((long long *)(result + 1 + 8)) = strcmp((char *)(value1 + 1 + 8 + 8), (char *)(value2 + 1 + 8 + 8)) == 0;
+        break;
+    }
+    case LIST_LIST:
+    {
+        *((long long *)(result + 1 + 8)) = value1 == value2;
+        break;
+    }
+
+    default:
+        *((long long *)(result + 1 + 8)) = 0;
+        break;
+    }
+
     return result;
 }

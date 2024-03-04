@@ -10,11 +10,17 @@ a = True
 b = 3
 c = 2
 d = 0
-t = ""
-x = []
+t = "test"
+u = "test"
+x = ["a"]
+y = ["b"]
 
-print(not a)
-print(a and b)
-print(a and x)
-print(a or x)
-print(t or x)
+print(a == True)
+print(a == False)
+print(a == 1)
+print(a == b)
+print(a == c)
+print(t == u)
+print(t == "test")
+print(x == y)
+print(x == x)
