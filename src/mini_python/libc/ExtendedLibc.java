@@ -9,7 +9,8 @@ public enum ExtendedLibc {
 
 	PRINTLN_DYNAMIC("println_dynamic"),
 	ADD_DYNAMIC("add_dynamic"),
-	SUB_DYNAMIC("sub_dynamic");
+	SUB_DYNAMIC("sub_dynamic"),
+	LT_DYNAMIC("lt_dynamic");
 	private final String label;
 
 	ExtendedLibc(String label) {

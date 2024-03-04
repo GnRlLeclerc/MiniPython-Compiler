@@ -105,6 +105,14 @@ void println_dynamic(void *value)
 
 // ************************************************* ALLOCATION ***************************************************** //
 
+/** Allocate an empty bool value */
+inline void* allocate_bool() {
+    void *value = malloc(1 + 8 + 8); // 1 byte tag, 8 bytes ref_count, 8 bytes value
+    *((char *)value) = BOOL;
+    *((long long *)(value + 1)) = 0; // ref_count (0 by default for a temporary value)
+    return value;
+}
+
 /** Allocate an empty int64 value */
 inline void* allocate_int64() {
     void *value = malloc(1 + 8 + 8); // 1 byte tag, 8 bytes ref_count, 8 bytes value
@@ -206,4 +214,39 @@ void* sub_dynamic(void *value1, void *value2) {
         }
 
         return result;
+}
+
+/** Compare two dynamic values with the "<" operator. If the types are not compatible, the program will exit with an error.
+ */
+void* lt_dynamic(void *value1, void *value2) {
+    // compatible : int & bool
+    // string & string
+    // none is never compatible
+
+    void* result = allocate_bool();
+
+    switch (combined_type(value1, value2))
+    {
+    // Boolean and integer addition.
+    case BOOL_BOOL:
+    case BOOL_INT64:
+    case INT64_BOOL:
+    case INT64_INT64:
+
+    *((long long *)(result + 1 + 8)) = *((long long *)(value1 + 1 + 8)) < *((long long *)(value2 + 1 + 8));
+    break;
+
+    case STRING_STRING:
+
+    *((long long *)(result + 1 + 8)) = strcmp((char *)(value1 + 1 + 8 + 8), (char *)(value2 + 1 + 8 + 8)) < 0;
+    break;
+
+    default:
+    // Default: unsupported types
+    printf("TypeError: unsupported operand type(s) for <: '%s' and '%s'\n", value_label(value1), value_label(value2));
+    exit(1);
+    break;
+    }
+
+    return result;
 }
