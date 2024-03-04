@@ -373,12 +373,35 @@ void *lt_dynamic(void *value1, void *value2)
 
     default:
         // Default: unsupported types
-        printf("TypeError: unsupported operand type(s) for <: '%s' and '%s'\n", value_label(value1), value_label(value2));
+        printf("TypeError: unsupported operand type(s) for comparison (>, <, <=, =>): '%s' and '%s'\n", value_label(value1), value_label(value2));
         exit(1);
         break;
     }
 
     return result;
+}
+
+/** Compare two dynamic values with the ">" operator. If the types are not compatible, the program will exit with an error.
+ */
+void *gt_dynamic(void *value1, void *value2)
+{
+    return lt_dynamic(value2, value1);
+}
+
+/** Compare two dynamic values with the ">=" operator. If the types are not compatible, the program will exit with an error.
+ */
+void *ge_dynamic(void *value1, void *value2)
+{
+    void *result = lt_dynamic(value1, value2);
+    *((long long *)(result + 1 + 8)) = !(*((long long *)(result + 1 + 8)));
+    return result;
+}
+
+/** Compare two dynamic values with the "<=" operator. If the types are not compatible, the program will exit with an error.
+ */
+void *le_dynamic(void *value1, void *value2)
+{
+    return ge_dynamic(value2, value1);
 }
 
 /** Compute the negation of a value. If the type is incompatible, the program will exit with an error

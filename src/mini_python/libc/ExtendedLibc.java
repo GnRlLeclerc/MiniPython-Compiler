@@ -14,6 +14,9 @@ public enum ExtendedLibc {
 	NOT_DYNAMIC("not_dynamic"),
 	NEG_DYNAMIC("neg_dynamic"),
 	LT_DYNAMIC("lt_dynamic"),
+	LE_DYNAMIC("le_dynamic"),
+	GT_DYNAMIC("gt_dynamic"),
+	GE_DYNAMIC("ge_dynamic"),
 	GET_ELEMENT("get_element"),
 	SET_ELEMENT("set_element");
 	
