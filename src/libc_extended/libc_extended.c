@@ -135,13 +135,19 @@ static inline void *allocate_string(long long size)
     return value;
 }
 
+/** Extract the type value from a value */
+static inline char type_value(void *value)
+{
+    return *((char *)value);
+}
+
 /** Combine 2 byte types by multiplying the first by 8 and adding the second.
  * This is a fast way to switch through all possible combinations of types.
  * Because our tags do not go over 4 bits, the result fits in a byte too.
  */
 static inline char combined_type(void *value1, void *value2)
 {
-    return (*((char *)value1) << 3) + *((char *)value2);
+    return (type_value(value1) << 3) + type_value(value2);
 }
 
 /** Add two dynamic values. If the types are not compatible, the program will exit with an error.
@@ -252,6 +258,60 @@ void *lt_dynamic(void *value1, void *value2)
     default:
         // Default: unsupported types
         printf("TypeError: unsupported operand type(s) for <: '%s' and '%s'\n", value_label(value1), value_label(value2));
+        exit(1);
+        break;
+    }
+
+    return result;
+}
+
+/** Compute the negation of a value. If the type is incompatible, the program will exit with an error
+ */
+void *neg_dynamic(void *value)
+{
+    // Compatible: int and bool -> int
+    // All others are not
+
+    void *result = allocate_int64();
+
+    switch (type_value(value))
+    {
+    case INT64:
+    case BOOL:
+        *((long long *)(result + 1 + 8)) = -(*((long long *)(value + 1 + 8)));
+        break;
+
+    default:
+        // Default: unsupported types
+        printf("TypeError: unsupported operand type for -: '%s'\n", value_label(value));
+        exit(1);
+        break;
+    }
+
+    return result;
+}
+
+/** Compute the not operation for a value. If the type is incompatible, the program will exit with an error */
+void *not_dynamic(void *value)
+{
+    // Compatible: all types can be coerced to a truthy or falsy value
+
+    void *result = allocate_bool();
+
+    switch (type_value(value))
+    {
+    case BOOL:
+        *((long long *)(result + 1 + 8)) = !(*((long long *)(value + 1 + 8)));
+        break;
+    case INT64:
+        *((long long *)(result + 1 + 8)) = (*((long long *)(value + 1 + 8)) == 0); // Value == 0
+        break;
+    case STRING:
+        *((long long *)(result + 1 + 8)) = (*((long long *)(value + 1 + 8)) == 0); // Length == 0
+        break;
+    default:
+        // Default: unsupported types
+        printf("TypeError: unsupported operand type for not: '%s'\n", value_label(value));
         exit(1);
         break;
     }

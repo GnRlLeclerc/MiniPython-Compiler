@@ -80,7 +80,7 @@ class Compile {
 
 		// We do not preallocate stack space, as we will just push values from the argument stack frame
 		// to the local function parameter stack frame.
-
+		
 		// Move all arguments to the stack frame that we just allocated
 		int argCount = def.f.params.size();
 

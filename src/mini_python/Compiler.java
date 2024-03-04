@@ -144,26 +144,27 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TEunop e) {
-
-		if (debug) {
-			System.out.println("Unop: " + e.op);
-		}
-
 		// 1. Evaluate the expression. It will push its result to the stack
 		e.e.accept(this);
 
 		// 2. Pop the result from the stack onto a usual register
 		x86_64.popq(Regs.RDI);
 
+		if (debug) {
+			System.out.println("Unop: " + e.op);
+		}
+
 		switch (e.op) {
-			case Uneg -> x86_64.negq(Regs.RDI); // %rdi = -%rdi
-			case Unot -> x86_64.notq(Regs.RDI); // %rdi = !%rdi
+			case Uneg -> 
+				// Call the neg_dynamic extended libc function
+					callExtendedLibc(ExtendedLibc.NEG_DYNAMIC);
+			case Unot ->
+				// Call the not_dynamic extended libc function
+					callExtendedLibc(ExtendedLibc.NOT_DYNAMIC);
 		}
 
 		// Finally: push the result to the stack
-		x86_64.pushq(Regs.RDI);
-		// We popped and then pushed the same value, so the stack offset remains the
-		// same
+		x86_64.pushq(Regs.RAX);
 	}
 
 	@Override
@@ -445,8 +446,8 @@ class Compiler implements TVisitor {
 		// Initialize the ref count to 0 (the allocated value has not been assigned to any variable yet)
 		x86_64.movq(0, "1(%rax)");
 
-		// Initialize the length
-		x86_64.movq("$" + stringBytes, "9(%rax)");
+		// Initialize the length (remove the null termination byte)
+		x86_64.movq("$" + (stringBytes - 1), "9(%rax)");
 
 		// Copy the string
 		x86_64.leaq("17(%rax)", Regs.RDI); // %rdi = %rax + 1 + 8 + 8 // Move the destination address to %rdi
