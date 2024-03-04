@@ -59,8 +59,8 @@ class Compiler implements TVisitor {
 	@Override
 	public void visit(Cint c) {
 		// Allocate and initialize a dynamic value to %rax
-		alloc_int64(c.i); 
-		
+		alloc_int64(c.i);
+
 		x86_64.pushq(Regs.RAX);
 
 		if (debug) {
@@ -155,7 +155,7 @@ class Compiler implements TVisitor {
 		}
 
 		switch (e.op) {
-			case Uneg -> 
+			case Uneg ->
 				// Call the neg_dynamic extended libc function
 					callExtendedLibc(ExtendedLibc.NEG_DYNAMIC);
 			case Unot ->
@@ -232,7 +232,27 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TElist e) {
-		throw new Todo("TElist");
+		long size = e.l.size();
+
+		if (debug) {
+			System.out.println("Evaluating and allocating list of size " + size);
+		}
+
+		// Accept all statements in order and push them to the stack
+		for (TExpr expr : e.l) {
+			expr.accept(this);
+		}
+
+		alloc_list(size); // Allocate the list and set its address to %rax
+
+		// Pop all values to the list in reverse order (the last element is currently the first on the stack)
+		for (int i = 0; i < size; i++) {
+			// Skip the 1 + 8 + 8 bytes of the tag, ref count, and length
+			x86_64.popq(((size - i - 1) * 8 + 17) + "(" + Regs.RAX + ")");
+		}
+
+		// Push the list address to the stack
+		x86_64.pushq(Regs.RAX);
 	}
 
 	@Override
@@ -457,6 +477,31 @@ class Compiler implements TVisitor {
 
 		// The newly allocated and copied value is in %r13 (not %r12 because we need to keep %r12 for the stack alignment)
 	}
+
+
+	/**
+	 * Allocate a dynamic list value with a hardcoded length.
+	 * The list tag is 4
+	 * This function will put the memory pointer in %rax because this is where malloc returns the pointer.
+	 */
+	private void alloc_list(long size) {
+		// Allocate memory for the dynamic value
+		// 1 byte for the tag, 8 bytes for the refcount, 8 bytes for the length, and size * 8 bytes for the element pointers
+		x86_64.movq("$" + 1 + 8 + 8 + size * 8, Regs.RDI); // Allocate memory for the dynamic value
+		callLibc("malloc");
+
+
+		// The pointer result is in %rax. We need to put the type tag in the first byte
+		x86_64.movq("$4", Regs.RDI);
+		x86_64.mov("%dil", "(%rax)"); // See https://stackoverflow.com/a/65527553
+
+		// Initialize the ref count to 0 (the allocated value has not been assigned to any variable yet)
+		x86_64.movq(0, "1(%rax)");
+
+		// Initialize the length
+		x86_64.movq("$" + size, "9(%rax)");
+	}
+
 
 	// ******************************************* LIBC CALL HELPERS ************************************************ //
 
