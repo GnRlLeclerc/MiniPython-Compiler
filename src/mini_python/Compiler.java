@@ -235,11 +235,11 @@ class Compiler implements TVisitor {
 		// 3. Call the function
 		x86_64.call("func_" + e.f.name);
 
-		// 4. Push the returned value to the stack
-		x86_64.pushq(Regs.RAX);
-
-		// 5. Remove the arguments from the stack
+		// 4. Remove the arguments from the stack
 		x86_64.addq("$" + 8 * e.l.size(), Regs.RSP);
+
+		// 5. Push the returned value to the stack
+		x86_64.pushq(Regs.RAX);
 
 		if (debug) {
 			System.out.println("Function call: " + e.f.name + " with " + e.l.size() + " argument(s)");
