@@ -65,6 +65,10 @@ enum Binop {
 		if ((type == Type.BOOL || type == Type.INT64 || type == Type.DYNAMIC) && (this == Bmul || this == Bdiv || this == Bmod || this == Bsub)) {
 			return Type.INT64;
 		}
+
+		if (((type1 == Type.STRING && type2 == Type.INT64) || (type2 == Type.STRING && type1 == Type.INT64)) && (this == Bmul)) {
+			return Type.STRING;
+		}
 		
 		return null; // Default output: coercion failed
 	}

@@ -1,5 +1,7 @@
 package mini_python;
 
+import java.util.List;
+
 import mini_python.libc.ExtendedLibc;
 import mini_python.registers.Regs;
 import mini_python.typing.Type;
@@ -126,14 +128,13 @@ class Compiler implements TVisitor {
 
 		switch (e.op) {
 			case Badd ->
-				// Call the add_dynamic extended libc function
-					callExtendedLibc(ExtendedLibc.ADD_DYNAMIC);
+				callExtendedLibc(ExtendedLibc.ADD_DYNAMIC);
 			case Bsub ->
-				// Call the sub_dynamic extended libc function
-					callExtendedLibc(ExtendedLibc.SUB_DYNAMIC);
+				callExtendedLibc(ExtendedLibc.SUB_DYNAMIC);
 			case Blt ->
-				// Call the le_dynamic extended libc function
-					callExtendedLibc(ExtendedLibc.LT_DYNAMIC);
+				callExtendedLibc(ExtendedLibc.LT_DYNAMIC);
+			case Bmul ->
+				callExtendedLibc(ExtendedLibc.MUL_DYNAMIC);
 
 			default -> throw new Todo("Binop: " + e.op);
 		}
@@ -193,7 +194,9 @@ class Compiler implements TVisitor {
 		// (this will be useful when we optimize the function call using registers or even reusing this stack frame
 		// instead of copying the arguments to the new stack frame.
 		// When registering a function, the arguments are given increasing offsets from the stack frame, in order.
-		for (TExpr expr : e.l.reversed()) {
+		List<TExpr> exprList = e.l;
+		for (int i = exprList.size() - 1; i >= 0; i--) {
+			TExpr expr = exprList.get(i);
 			expr.accept(this);
 		}
 

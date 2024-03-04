@@ -8,12 +8,13 @@
 #define STRING 3
 #define LIST 4
 
-// Type combinations using tag1 * 3 + tag2
+// Type combinations using tag1 << 3 + tag2
 #define BOOL_BOOL 9
 #define BOOL_INT64 10
 #define INT64_BOOL 17
 #define INT64_INT64 18
-
+#define INT64_STRING 19
+#define STRING_INT64 26
 #define STRING_STRING 27
 
 // WARNING: static inline functions are abstracted away and cannot be called by other modules, like our asm code !
@@ -399,6 +400,69 @@ void *neg_dynamic(void *value)
     default:
         // Default: unsupported types
         printf("TypeError: unsupported operand type for -: '%s'\n", value_label(value));
+        exit(1);
+        break;
+    }
+
+    return result;
+}
+
+/** Multiply two dynamic values. If the types are not compatible, the program will exit with an error.
+ */
+void *mul_dynamic(void *value1, void *value2)
+{
+    // compatible : int & bool
+    // string & int
+    // none is never compatible
+
+    void *result = NULL;
+
+    switch (combined_type(value1, value2))
+    {
+    // Boolean and integer addition.
+    case BOOL_BOOL:
+    case BOOL_INT64:
+    case INT64_BOOL:
+    case INT64_INT64:
+        // TODO: detect if one of the input values is a temporary one, and reuse it
+        // TODO: garbage collect the other input value if both are temporary
+        result = allocate_int64();
+        *((long long *)(result + 1 + 8)) = *((long long *)(value1 + 1 + 8)) * *((long long *)(value2 + 1 + 8));
+        break;
+
+    case STRING_INT64:
+    {
+        // TODO: garbage collect the 2 operands. We allocate a new string.
+        // Compute output size
+        if (*((long long *)(value2 + 1 + 8)) > 0)
+        {
+            long long size = *((long long *)(value1 + 1 + 8)) * *((long long *)(value2 + 1 + 8));
+            result = allocate_string(size);
+
+            // Copy the first string
+            strcpy((char *)(result + 1 + 8 + 8), (char *)(value1 + 1 + 8 + 8));
+
+            for (long long i = 1; i < *((long long *)(value2 + 1 + 8)); i++)
+            {
+                strcat((char *)(result + 1 + 8 + 8), (char *)(value1 + 1 + 8 + 8));
+            }
+        }
+        else
+        {
+            result = allocate_string(0);
+        }
+
+        break;
+    }
+    case INT64_STRING:
+    {
+        result = mul_dynamic(value2, value1);
+        break;
+    }
+
+    default:
+        // Default: unsupported types
+        printf("TypeError: unsupported operand type(s) for +: '%s' and '%s'\n", value_label(value1), value_label(value2));
         exit(1);
         break;
     }
