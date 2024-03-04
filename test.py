@@ -7,24 +7,10 @@ def print_all(a, b, c, d, e):
 
 
 a = True
-b = False
-c = "Hello World !"
-d = 42
-e = d - a + b
+b = 3
+c = 2
+d = 0
 
-print_all(a, b, c, d, e)
-
-print(b < 34)
-print(b <= 34)
-print(b >= 34)
-print(b > 34)
-print("SEP")
-print(d < 42)
-print(d <= 42)
-print(d >= 42)
-print(d > 42)
-print("SEP")
-print(d * 4)
-print(c * 0)
-print(c * 2)
-print(-1 * c)
+print(b // a)
+print(b // c)
+print(c // d)

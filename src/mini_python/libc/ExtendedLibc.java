@@ -10,6 +10,7 @@ public enum ExtendedLibc {
 	PRINTLN_DYNAMIC("println_dynamic"),
 	ADD_DYNAMIC("add_dynamic"),
 	SUB_DYNAMIC("sub_dynamic"),
+	DIV_DYNAMIC("div_dynamic"),
 	MUL_DYNAMIC("mul_dynamic"),
 	NOT_DYNAMIC("not_dynamic"),
 	NEG_DYNAMIC("neg_dynamic"),
