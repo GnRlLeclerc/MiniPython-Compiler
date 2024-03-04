@@ -791,3 +791,34 @@ void *neq_dynamic(void *value1, void *value2)
     *((long long *)(result + 1 + 8)) = !(*((long long *)(result + 1 + 8)));
     return result;
 }
+
+void *range_list(void *value)
+{
+    void *result = NULL;
+
+    switch (type_value(value))
+    {
+    case INT64:
+    case BOOL:
+    {
+        long long size = *((long long *)(value + 1 + 8));
+        result = allocate_list(size);
+
+        for (long long i = 0; i < size; i++)
+        {
+            void *elem = allocate_int64();
+            *((long long *)(elem + 1 + 8)) = i;
+            *((void **)(result + 1 + 8 + 8 + i * 8)) = elem;
+        }
+        break;
+    }
+
+    default:
+        // Default: unsupported types
+        printf("TypeError: range() argument must be int, not %s\n", value_label(value));
+        exit(1);
+        break;
+    }
+
+    return result;
+}

@@ -25,7 +25,8 @@ public enum ExtendedLibc {
 	GE_DYNAMIC("ge_dynamic"),
 	GET_ELEMENT("get_element"),
 	TRUTHY_DYNAMIC("truthy_dynamic"),
-	SET_ELEMENT("set_element");
+	SET_ELEMENT("set_element"),
+	RANGE_LIST("range_list");
 	
 	private final String label;
 

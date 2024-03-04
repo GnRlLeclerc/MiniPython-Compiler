@@ -213,6 +213,15 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TEcall e) {
+		// Special management of the list construct, only called with ranged
+		if (e.f.name == "list") {
+			e.l.getFirst().accept(this);
+			x86_64.popq(Regs.RDI);
+			callExtendedLibc(ExtendedLibc.RANGE_LIST);
+			x86_64.pushq(Regs.RAX);
+			return;
+		}
+
 		// 1. Accept all arguments and push them to the stack in reverse order
 		// (this will be useful when we optimize the function call using registers or even reusing this stack frame
 		// instead of copying the arguments to the new stack frame.
@@ -290,7 +299,7 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TErange e) {
-		throw new Todo("TErange");
+		e.e.accept(this);
 	}
 
 	// ******************************************** STATEMENT VISIT ************************************************* //
