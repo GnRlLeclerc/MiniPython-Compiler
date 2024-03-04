@@ -227,15 +227,12 @@ class Compiler implements TVisitor {
 			// Evaluate the argument expression and push it to the stack (we do not check whether it is a list or not)
 			e.l.getFirst().accept(this);
 
-			// Allocate an int64 to store the result. Its reference is stored in %rax
-			alloc_int64();
+			x86_64.popq(Regs.RDI); // Pop to the 1st argument register
 
-			// Pop the len() argument from the stack to the usual register
-			x86_64.popq(Regs.RDI);
-			x86_64.movq("9(%rdi)", Regs.RDI); // Load the length in %rdi
-			x86_64.movq(Regs.RDI, "9(%rax)"); // Store the length in the int64 dynamic value
-			
-			// Push the value to the stack
+			// Call the len_dynamic extended libc function
+			callExtendedLibc(ExtendedLibc.LEN_DYNAMIC);
+
+			// Push the result to the stack
 			x86_64.pushq(Regs.RAX);
 			return;
 		}
