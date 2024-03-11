@@ -240,11 +240,9 @@ class Compiler implements TVisitor {
 		// 2. Pop the result from the stack onto a usual register
 		x86_64.popq(Regs.RDI);
 
+		String suffix = "";
 		if (e.e.temporary) {
-			// set RSI to 1 if the temporary value is truthy, 0 otherwise
-			x86_64.movq("$1", Regs.RSI);
-		} else {
-			x86_64.movq("$0", Regs.RSI);
+			suffix = "_temp";
 		}
 
 		if (debug) {
@@ -254,10 +252,10 @@ class Compiler implements TVisitor {
 		switch (e.op) {
 			case Uneg ->
 				// Call the neg_dynamic extended libc function
-					callExtendedLibc(ExtendedLibc.NEG_DYNAMIC);
+					callExtendedLibc(ExtendedLibc.NEG_DYNAMIC, suffix);
 			case Unot ->
 				// Call the not_dynamic extended libc function
-					callExtendedLibc(ExtendedLibc.NOT_DYNAMIC);
+					callExtendedLibc(ExtendedLibc.NOT_DYNAMIC, suffix);
 		}
 
 		// Finally: push the result to the stack
@@ -753,10 +751,13 @@ class Compiler implements TVisitor {
 	/**
 	 * Call a function from the extended libc, and handle stack alignment
 	 */
-	private void callExtendedLibc(ExtendedLibc function) {
+	private void callExtendedLibc(ExtendedLibc function, String suffix) {
 		alignStack();
-		x86_64.call(function.getLabel());
+		x86_64.call(function.getLabel() + suffix);
 		unalignStack();
+	}
+	private void callExtendedLibc(ExtendedLibc function) {
+		callExtendedLibc(function, "");
 	}
 
 	// ******************************************* STACK ALIGNMENT ************************************************* //

@@ -842,7 +842,7 @@ class TEcall extends TExpr {
 	final LinkedList<TExpr> l;
 
 	TEcall(Function f, LinkedList<TExpr> l) {
-		super(f.returnType, true);
+		super(f.returnType, false);
 		this.f = f;
 		this.l = l;
 	}
