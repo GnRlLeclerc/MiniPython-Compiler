@@ -4,6 +4,7 @@ package mini_python;
 import java_cup.runtime.*;
 import java.util.*;
 import static mini_python.sym.*;
+import mini_python.exception_handling.Location;
 
 %%
 

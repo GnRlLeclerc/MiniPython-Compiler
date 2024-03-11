@@ -1,8 +1,10 @@
 package mini_python;
 
-import mini_python.typing.Type;
-
 import java.util.LinkedList;
+
+import mini_python.exception_handling.CompilationException;
+import mini_python.exception_handling.Location;
+import mini_python.typing.Type;
 
 /* Abstract Syntax of Mini-Python */
 
@@ -62,18 +64,21 @@ enum Binop {
 
 		// NOTE: we do not fully implement all python operations. The following can only
 		// be done with int-type operands
-		if ((type == Type.BOOL || type == Type.INT64 || type == Type.DYNAMIC) && (this == Bmul || this == Bdiv || this == Bmod || this == Bsub)) {
+		if ((type == Type.BOOL || type == Type.INT64 || type == Type.DYNAMIC)
+				&& (this == Bmul || this == Bdiv || this == Bmod || this == Bsub)) {
 			return Type.INT64;
 		}
 
-		if (((type1 == Type.STRING && type2 == Type.INT64) || (type2 == Type.STRING && type1 == Type.INT64)) && (this == Bmul)) {
+		if (((type1 == Type.STRING && type2 == Type.INT64) || (type2 == Type.STRING && type1 == Type.INT64))
+				&& (this == Bmul)) {
 			return Type.STRING;
 		}
 
-		if (((type1 == Type.LIST && type2 == Type.INT64) || (type2 == Type.LIST && type1 == Type.INT64)) && (this == Bmul)) {
+		if (((type1 == Type.LIST && type2 == Type.INT64) || (type2 == Type.LIST && type1 == Type.INT64))
+				&& (this == Bmul)) {
 			return Type.LIST;
 		}
-		
+
 		return null; // Default output: coercion failed
 	}
 }
@@ -91,33 +96,33 @@ interface Visitor {
 
 	void visit(Ecst e);
 
-	void visit(Ebinop e);
+	void visit(Ebinop e) throws CompilationException;
 
-	void visit(Eunop e);
+	void visit(Eunop e) throws CompilationException;
 
-	void visit(Eident e);
+	void visit(Eident e) throws CompilationException;
 
-	void visit(Ecall e);
+	void visit(Ecall e) throws CompilationException;
 
-	void visit(Eget e);
+	void visit(Eget e) throws CompilationException;
 
-	void visit(Elist e);
+	void visit(Elist e) throws CompilationException;
 
-	void visit(Sif s);
+	void visit(Sif s) throws CompilationException;
 
-	void visit(Sreturn s);
+	void visit(Sreturn s) throws CompilationException;
 
-	void visit(Sassign s);
+	void visit(Sassign s) throws CompilationException;
 
-	void visit(Sprint s);
+	void visit(Sprint s) throws CompilationException;
 
-	void visit(Sblock s);
+	void visit(Sblock s) throws CompilationException;
 
-	void visit(Sfor s);
+	void visit(Sfor s) throws CompilationException;
 
-	void visit(Seval s);
+	void visit(Seval s) throws CompilationException;
 
-	void visit(Sset s);
+	void visit(Sset s) throws CompilationException;
 }
 
 interface TVisitor {
@@ -160,24 +165,6 @@ interface TVisitor {
 	void visit(TSeval s);
 
 	void visit(TSset s);
-}
-
-/**
- * Code location in the source file
- */
-class Location {
-	final int line;
-	final int column;
-
-	Location(int line, int column) {
-		this.line = line + 1;
-		this.column = column;
-	}
-
-	@Override
-	public String toString() {
-		return this.line + ":" + this.column + ":";
-	}
 }
 
 /**
@@ -300,7 +287,7 @@ class Cint extends Constant {
 }
 
 abstract class Expr {
-	abstract void accept(Visitor v);
+	abstract void accept(Visitor v) throws CompilationException;
 }
 
 /**
@@ -334,7 +321,7 @@ class Ebinop extends Expr {
 	}
 
 	@Override
-	void accept(Visitor v) {
+	void accept(Visitor v) throws CompilationException {
 		v.visit(this);
 	}
 }
@@ -353,7 +340,7 @@ class Eunop extends Expr {
 	}
 
 	@Override
-	void accept(Visitor v) {
+	void accept(Visitor v) throws CompilationException {
 		v.visit(this);
 	}
 }
@@ -370,7 +357,7 @@ class Eident extends Expr {
 	}
 
 	@Override
-	void accept(Visitor v) {
+	void accept(Visitor v) throws CompilationException {
 		v.visit(this);
 	}
 }
@@ -388,7 +375,7 @@ class Eget extends Expr {
 	}
 
 	@Override
-	void accept(Visitor v) {
+	void accept(Visitor v) throws CompilationException {
 		v.visit(this);
 	}
 }
@@ -407,7 +394,7 @@ class Ecall extends Expr {
 	}
 
 	@Override
-	void accept(Visitor v) {
+	void accept(Visitor v) throws CompilationException {
 		v.visit(this);
 	}
 }
@@ -424,13 +411,13 @@ class Elist extends Expr {
 	}
 
 	@Override
-	void accept(Visitor v) {
+	void accept(Visitor v) throws CompilationException {
 		v.visit(this);
 	}
 }
 
 abstract class Stmt {
-	abstract void accept(Visitor v);
+	abstract void accept(Visitor v) throws CompilationException;
 }
 
 /**
@@ -449,7 +436,7 @@ class Sif extends Stmt {
 	}
 
 	@Override
-	void accept(Visitor v) {
+	void accept(Visitor v) throws CompilationException {
 		v.visit(this);
 	}
 }
@@ -463,7 +450,7 @@ class Sreturn extends Stmt {
 	}
 
 	@Override
-	void accept(Visitor v) {
+	void accept(Visitor v) throws CompilationException {
 		v.visit(this);
 	}
 }
@@ -482,7 +469,7 @@ class Sassign extends Stmt {
 	}
 
 	@Override
-	void accept(Visitor v) {
+	void accept(Visitor v) throws CompilationException {
 		v.visit(this);
 	}
 }
@@ -499,7 +486,7 @@ class Sprint extends Stmt {
 	}
 
 	@Override
-	void accept(Visitor v) {
+	void accept(Visitor v) throws CompilationException {
 		v.visit(this);
 	}
 }
@@ -520,7 +507,7 @@ class Sblock extends Stmt {
 	}
 
 	@Override
-	void accept(Visitor v) {
+	void accept(Visitor v) throws CompilationException {
 		v.visit(this);
 	}
 }
@@ -542,7 +529,7 @@ class Sfor extends Stmt {
 	}
 
 	@Override
-	void accept(Visitor v) {
+	void accept(Visitor v) throws CompilationException {
 		v.visit(this);
 	}
 }
@@ -559,7 +546,7 @@ class Seval extends Stmt {
 	}
 
 	@Override
-	void accept(Visitor v) {
+	void accept(Visitor v) throws CompilationException {
 		v.visit(this);
 	}
 }
@@ -578,7 +565,7 @@ class Sset extends Stmt {
 	}
 
 	@Override
-	void accept(Visitor v) {
+	void accept(Visitor v) throws CompilationException {
 		v.visit(this);
 	}
 }
@@ -644,7 +631,8 @@ class Variable {
 		this.uid = uid;
 		this.ofs = offset; // Offset of 0 with regards to %rbp
 
-		// Type can be `null` ! If the type is `null` when trying to access the variable,
+		// Type can be `null` ! If the type is `null` when trying to access the
+		// variable,
 		// this means that the variable is being accessed before being assigned !
 		this.type = type;
 	}
@@ -683,9 +671,11 @@ class Function {
 	// type will be dynamic.
 	protected Type returnType;
 
-	// Stores the byte offset from the base stack frame in order to allocate enough stack space
+	// Stores the byte offset from the base stack frame in order to allocate enough
+	// stack space
 	// for all function arguments + all local variables for this function.
-	// This is determined during the type checking phase, where every local variable receives a stack frame offset.
+	// This is determined during the type checking phase, where every local variable
+	// receives a stack frame offset.
 	protected int localVariablesOffset; // Negative bytes
 
 	Function(String name, LinkedList<Variable> params) {
@@ -693,7 +683,8 @@ class Function {
 		this.params = params;
 		this.returnType = Type.DYNAMIC; // By default (we cannot assume what it will be)
 		this.localVariablesOffset = 0; // Offset for local variables.
-		// We do not initialize it to - len * 8 here because we need to assign the offset to the `Variable` objects too
+		// We do not initialize it to - len * 8 here because we need to assign the
+		// offset to the `Variable` objects too
 	}
 
 	/**
@@ -718,7 +709,7 @@ abstract class TExpr {
 	// we assume every expression is temporary by default
 	// unless : the expression is a variable or list access
 	// or the expression is linked to a variable or list assignement
-	// where the temporary is updated on creation of the assigment 
+	// where the temporary is updated on creation of the assigment
 	protected boolean temporary;
 
 	TExpr(Type type, boolean temporary) {

@@ -2,6 +2,8 @@ package mini_python;
 
 import java.util.LinkedList;
 
+import mini_python.exception_handling.CompilationException;
+import mini_python.exception_handling.Location;
 import mini_python.typing.Type;
 
 class Typing {
@@ -13,7 +15,7 @@ class Typing {
 		throw new Error(loc + "\nerror: " + msg);
 	}
 
-	static TFile file(File f) {
+	static TFile file(File f) throws CompilationException {
 		TFile tFile = new TFile();
 
 		for (Def d : f.l) {
@@ -31,9 +33,13 @@ class Typing {
 
 			int retroStackOffset = 16;
 			for (Ident i : d.l) {
-				// Because Ecall statements prepare the arguments on the stack, we do not need to copy them.
-				// The arguments offset go up the previous stack frame instead of down the current one
-				Variable v = Variable.mkVariable(i.id, Type.DYNAMIC, retroStackOffset); // Because we do not use type hinting, arguments are dynamic by default
+				// Because Ecall statements prepare the arguments on the stack, we do not need
+				// to copy them.
+				// The arguments offset go up the previous stack frame instead of down the
+				// current one
+				Variable v = Variable.mkVariable(i.id, Type.DYNAMIC, retroStackOffset); // Because we do not use type
+																						// hinting, arguments are
+																						// dynamic by default
 				retroStackOffset += 8;
 
 				if (typer.vars.containsKey(v.name)) {
@@ -47,7 +53,8 @@ class Typing {
 			Typer.functions.put(d.f.id, func);
 
 			// Accept this function and parse its return statements
-			// Clear the return statement list & tell the typer that all new variable declarations are local to this function
+			// Clear the return statement list & tell the typer that all new variable
+			// declarations are local to this function
 			typer.returns.clear();
 			typer.currentFunction = func;
 

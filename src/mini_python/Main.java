@@ -1,5 +1,7 @@
 package mini_python;
 
+import mini_python.exception_handling.CompilationExceptionHandler;
+
 public class Main {
 
 	static boolean parse_only = false;
@@ -46,9 +48,11 @@ public class Main {
 			String file_s = file.substring(0, file.length() - 3) + ".s";
 			asm.printToFile(file_s);
 		} catch (Exception e) {
-			System.out.println(file + ":" + e.getMessage());
-			System.exit(1);
+			CompilationExceptionHandler handler = new CompilationExceptionHandler(file);
+			handler.handle(e);
 		} catch (Error e) {
+			// là on est sur une erreur ?
+			System.out.println("Error:");
 			System.out.println(file + ":" + e.getMessage());
 			System.exit(1);
 		}

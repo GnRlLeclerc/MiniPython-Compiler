@@ -7,6 +7,8 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
 
+import mini_python.exception_handling.CompilationException;
+import mini_python.exception_handling.exceptions.UndefinedVariableException;
 import mini_python.typing.Type;
 
 // the following exception is used whenever you have to implement something
@@ -51,10 +53,12 @@ class Typer implements Visitor {
 	// Store locally defined variables
 	public HashMap<String, Variable> vars;
 
-	// Store the return instructions of a function in order to determine its return type
+	// Store the return instructions of a function in order to determine its return
+	// type
 	public ArrayList<TSreturn> returns = new ArrayList<>();
 	public TStmt currStmt;
-	// Store the current function in which the typer is currently working in order to remember in which stack frame
+	// Store the current function in which the typer is currently working in order
+	// to remember in which stack frame
 	// to allocate an offset for the new variables we might encounter.
 	protected Function currentFunction;
 	private TExpr currExpr;
@@ -87,7 +91,7 @@ class Typer implements Visitor {
 	}
 
 	@Override
-	public void visit(Ebinop e) {
+	public void visit(Ebinop e) throws CompilationException {
 		e.e1.accept(this);
 		TExpr e1 = this.currExpr;
 		e.e2.accept(this);
@@ -96,23 +100,23 @@ class Typer implements Visitor {
 	}
 
 	@Override
-	public void visit(Eunop e) {
+	public void visit(Eunop e) throws CompilationException {
 		e.e.accept(this);
 		TExpr e1 = this.currExpr;
 		this.currExpr = new TEunop(e.op, e1);
 	}
 
 	@Override
-	public void visit(Eident id) {
+	public void visit(Eident id) throws CompilationException {
 		Variable v = this.vars.get(id.x.id);
 		if (v == null) {
-			throw new Error("undefined variable: " + id.x.id + " at " + id.x.loc);
+			throw new UndefinedVariableException(id.x.id, id.x.loc);
 		}
 		this.currExpr = new TEident(v);
 	}
 
 	@Override
-	public void visit(Ecall e) {
+	public void visit(Ecall e) throws CompilationException {
 		Function f = functions.get(e.f.id);
 		if (f == null) {
 			throw new Error("undefined function: " + e.f.id + " at " + e.f.loc);
@@ -142,7 +146,7 @@ class Typer implements Visitor {
 	}
 
 	@Override
-	public void visit(Elist e) {
+	public void visit(Elist e) throws CompilationException {
 		LinkedList<TExpr> l = new LinkedList<>();
 		for (Expr expr : e.l) {
 			expr.accept(this);
@@ -152,7 +156,7 @@ class Typer implements Visitor {
 	}
 
 	@Override
-	public void visit(Eget e) {
+	public void visit(Eget e) throws CompilationException {
 		e.e1.accept(this);
 		TExpr e1 = this.currExpr;
 		e.e2.accept(this);
@@ -161,19 +165,19 @@ class Typer implements Visitor {
 	}
 
 	@Override
-	public void visit(Seval s) {
+	public void visit(Seval s) throws CompilationException {
 		s.e.accept(this);
 		this.currStmt = new TSeval(this.currExpr);
 	}
 
 	@Override
-	public void visit(Sprint s) {
+	public void visit(Sprint s) throws CompilationException {
 		s.e.accept(this);
 		this.currStmt = new TSprint(this.currExpr);
 	}
 
 	@Override
-	public void visit(Sblock s) {
+	public void visit(Sblock s) throws CompilationException {
 		TSblock tsblock = new TSblock();
 		for (Stmt stmt : s.l) {
 			stmt.accept(this);
@@ -183,7 +187,7 @@ class Typer implements Visitor {
 	}
 
 	@Override
-	public void visit(Sif s) {
+	public void visit(Sif s) throws CompilationException {
 		s.s1.accept(this);
 		TStmt s1 = this.currStmt;
 		s.s2.accept(this);
@@ -193,7 +197,7 @@ class Typer implements Visitor {
 	}
 
 	@Override
-	public void visit(Sassign s) {
+	public void visit(Sassign s) throws CompilationException {
 		s.e.accept(this);
 
 		// Reuse or create the variable used to contain the assignment output
@@ -204,7 +208,7 @@ class Typer implements Visitor {
 	}
 
 	@Override
-	public void visit(Sreturn s) {
+	public void visit(Sreturn s) throws CompilationException {
 		s.e.accept(this);
 		TSreturn tsreturn = new TSreturn(this.currExpr);
 
@@ -213,17 +217,17 @@ class Typer implements Visitor {
 	}
 
 	@Override
-	public void visit(Sfor s) {
+	public void visit(Sfor s) throws CompilationException {
 		// Reuse or create the variable used to contain the loop output
 		Variable v = this.getOrCreateVar(s.x.id);
 		s.s.accept(this);
 		s.e.accept(this);
-		
+
 		this.currStmt = new TSfor(v, this.currExpr, this.currStmt);
 	}
 
 	@Override
-	public void visit(Sset s) {
+	public void visit(Sset s) throws CompilationException {
 		s.e1.accept(this);
 		TExpr e1 = this.currExpr;
 		s.e2.accept(this);
@@ -234,7 +238,8 @@ class Typer implements Visitor {
 	}
 
 	/**
-	 * Helper function to compute the output type of a function from the stored return statements.
+	 * Helper function to compute the output type of a function from the stored
+	 * return statements.
 	 * This function never returns null and defaults to NoneType
 	 */
 	public Type currentReturnType() {
@@ -250,7 +255,8 @@ class Typer implements Visitor {
 			return types.iterator().next();
 		}
 
-		// If there are multiple types, return dynamic. Even if types BOOL and INT64 are returned, we do not coerce them.
+		// If there are multiple types, return dynamic. Even if types BOOL and INT64 are
+		// returned, we do not coerce them.
 		if (types.size() > 1) {
 			return Type.DYNAMIC;
 		}
@@ -260,8 +266,10 @@ class Typer implements Visitor {
 	}
 
 	/**
-	 * Sets the "returnType" member of all current TSreturn statements to the given type.
-	 * Call this function after having finished to parse a function, and determined its actual return type.
+	 * Sets the "returnType" member of all current TSreturn statements to the given
+	 * type.
+	 * Call this function after having finished to parse a function, and determined
+	 * its actual return type.
 	 */
 	public void setReturnTypes(Type type) {
 		for (TSreturn tsreturn : this.returns) {
@@ -271,7 +279,8 @@ class Typer implements Visitor {
 
 	/**
 	 * Helper: given a variable name, get it from the current scope or create it.
-	 * This will help avoid allocating new space on the stack when reusing a variable name for other assignments
+	 * This will help avoid allocating new space on the stack when reusing a
+	 * variable name for other assignments
 	 */
 	public Variable getOrCreateVar(String id) {
 		Variable v;

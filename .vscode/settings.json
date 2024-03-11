@@ -1,5 +1,5 @@
 {
-  "java.format.enabled": false, // Because no settings match IntelliJ IDEA...
+  "java.format.enabled": true, // Because no settings match IntelliJ IDEA...
   "[java]": {
     "editor.tabSize": 4,
     "editor.insertSpaces": true,
