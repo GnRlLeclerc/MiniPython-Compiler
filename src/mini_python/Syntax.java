@@ -712,10 +712,19 @@ class Function {
 abstract class TExpr {
 
 	protected Type type;
+	// denotes if the value in the expression is temporary or
+	// in scope as a variable or list element (and not an
+	// intermediate value for example)
+	// we assume every expression is temporary by default
+	// unless : the expression is a variable or list access
+	// or the expression is linked to a variable or list assignement
+	// where the temporary is updated on creation of the assigment 
+	protected boolean temporary;
 
-	TExpr(Type type) {
+	TExpr(Type type, boolean temporary) {
 		assert type != null;
 		this.type = type;
+		this.temporary = temporary;
 	}
 
 	abstract void accept(TVisitor v);
@@ -732,7 +741,7 @@ class TEcst extends TExpr {
 	final Constant c;
 
 	TEcst(Constant c) {
-		super(c.getType());
+		super(c.getType(), true);
 		this.c = c;
 	}
 
@@ -750,7 +759,7 @@ class TEbinop extends TExpr {
 	final TExpr e1, e2;
 
 	TEbinop(Binop op, TExpr e1, TExpr e2) {
-		super(op.coerce(e1.getType(), e2.getType()));
+		super(op.coerce(e1.getType(), e2.getType()), true);
 		this.op = op;
 		this.e1 = e1;
 		this.e2 = e2;
@@ -774,7 +783,7 @@ class TEunop extends TExpr {
 	final TExpr e;
 
 	TEunop(Unop op, TExpr e) {
-		super(op.coerce(e.getType()));
+		super(op.coerce(e.getType()), true);
 		this.op = op;
 		this.e = e;
 
@@ -796,7 +805,7 @@ class TEident extends TExpr {
 	final Variable x;
 
 	TEident(Variable x) {
-		super(x.type);
+		super(x.type, false);
 		this.x = x;
 	}
 
@@ -814,7 +823,7 @@ class TEget extends TExpr {
 	final TExpr e1, e2;
 
 	TEget(TExpr e1, TExpr e2) {
-		super(Type.DYNAMIC); // List can contain multiple elements
+		super(Type.DYNAMIC, false); // List can contain multiple elements
 		this.e1 = e1;
 		this.e2 = e2;
 	}
@@ -833,7 +842,7 @@ class TEcall extends TExpr {
 	final LinkedList<TExpr> l;
 
 	TEcall(Function f, LinkedList<TExpr> l) {
-		super(f.returnType);
+		super(f.returnType, true);
 		this.f = f;
 		this.l = l;
 	}
@@ -851,7 +860,7 @@ class TElist extends TExpr {
 	final LinkedList<TExpr> l;
 
 	TElist(LinkedList<TExpr> l) {
-		super(Type.LIST);
+		super(Type.LIST, true);
 		this.l = l;
 	}
 
@@ -868,7 +877,7 @@ class TErange extends TExpr {
 	final TExpr e;
 
 	TErange(TExpr e) {
-		super(Type.RANGE);
+		super(Type.RANGE, true);
 		this.e = e;
 	}
 
@@ -937,6 +946,7 @@ class TSassign extends TStmt {
 		super();
 		this.x = x;
 		this.e = e;
+		this.e.temporary = false; // The value is not temporary anymore
 	}
 
 	@Override
@@ -1035,6 +1045,7 @@ class TSset extends TStmt {
 		/* function definition and file */
 		this.e2 = e2;
 		this.e3 = e3;
+		this.e3.temporary = false; // The value is not temporary anymore
 	}
 
 	@Override
