@@ -1,8 +1,8 @@
 package mini_python;
 
-import mini_python.typing.Type;
-
 import java.util.LinkedList;
+
+import mini_python.typing.Type;
 
 class Typing {
 
@@ -29,8 +29,12 @@ class Typing {
 			// Create the function element. We link it with the list of parameters right now
 			Function func = new Function(d.f.id, params);
 
+			int retroStackOffset = 16;
 			for (Ident i : d.l) {
-				Variable v = Variable.mkVariable(i.id, Type.DYNAMIC, func.getStackFrameOffset()); // Because we do not use type hinting, arguments are dynamic by default
+				// Because Ecall statements prepare the arguments on the stack, we do not need to copy them.
+				// The arguments offset go up the previous stack frame instead of down the current one
+				Variable v = Variable.mkVariable(i.id, Type.DYNAMIC, retroStackOffset); // Because we do not use type hinting, arguments are dynamic by default
+				retroStackOffset += 8;
 
 				if (typer.vars.containsKey(v.name)) {
 					error(i.loc, "Parameter " + v.name + " is already defined");

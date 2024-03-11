@@ -67,7 +67,7 @@ class Compile {
 	 * NOTE: because all arguments are evaluated and pushed to the stack, and then copied to local variables also
 	 * allocated on the stack, we do not need to try and optimize the function call using registers.
 	 * <p>
-	 * TODO: we might even make the local variables of all functions (except main) refer to the stack positions before
+	 * As an optimization, we make the local variables of all functions (except main) refer to the stack positions before
 	 * the new stack frame and return value (ie 16(%rbp), 24(%rbp), etc instead of -8(%rbp), -16(%rbp), etc) because
 	 * we are essentially duplicating the stack frame for each function call.
 	 */
@@ -82,18 +82,19 @@ class Compile {
 		// to the local function parameter stack frame.
 		
 		// Move all arguments to the stack frame that we just allocated
-		int argCount = def.f.params.size();
+		// int argCount = def.f.params.size();
 
 		// Move all arguments to the new stack frame. The 1st argument is the last that was pushed to the stack
 		// (so that depending on our optimization strategy, we have the choice to reuse the previous stack frame,
 		// with arguments having their absolute stack frame offset always increasing in the order of arguments).
-		for (int i = 0; i < argCount; i++) {
+		// for (int i = 0; i < argCount; i++) {
+			// WE DO THE OPTIMIZATION ! ˇˇˇˇˇˇˇˇˇˇˇˇ
 			// NOTE: if we reused the previous stack frame, we would save <arg_count> instructions.
-			compiler.x86_64.pushq((i + 2) * 8 + "(%rbp)"); // Push the argument to the stack
-		}
+			// compiler.x86_64.pushq((i + 2) * 8 + "(%rbp)"); // Push the argument to the stack
+		// }
 
 		// Allocate stack space for the local variables of the function		
-		int additionalOffset = def.f.localVariablesOffset + 8 * argCount;
+		int additionalOffset = def.f.localVariablesOffset; // Do not add parameters, that were already added to the stack frame
 		if (additionalOffset != 0) {
 			compiler.x86_64.subq("$" + -additionalOffset, Regs.RSP);
 		} 

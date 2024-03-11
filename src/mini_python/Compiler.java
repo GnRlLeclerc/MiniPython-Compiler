@@ -19,6 +19,8 @@ class Compiler implements TVisitor {
 
 	// Keep a trace of temporary values pushed to the stack (used in for loops, for instance)
 	// so that Return statements can clean up if they exit a non-trivial stack frame prematurely
+	// WARNING: this is only used for "for" loops. As we also use a stack alignment strategy, we must not use an odd
+	// number of temporary stack values.
 	int tmpStackValuesCount = 0;
 
 	Compiler() {

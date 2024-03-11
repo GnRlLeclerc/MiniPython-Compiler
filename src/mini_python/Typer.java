@@ -32,19 +32,19 @@ class Typer implements Visitor {
 		// Create the buitlin list function
 		LinkedList<Variable> listParams = new LinkedList<>();
 		Function list = new Function("list", listParams);
-		listParams.add(Variable.mkVariable("l", list.getStackFrameOffset()));
+		listParams.add(Variable.mkVariable("l", 16));
 		functions.put("list", list);
 
 		// Create the buitlin len function
 		LinkedList<Variable> lenParams = new LinkedList<>();
 		Function len = new Function("len", lenParams);
-		lenParams.add(Variable.mkVariable("l", len.getStackFrameOffset()));
+		lenParams.add(Variable.mkVariable("l", 16));
 		functions.put("len", len);
 
 		// Create the buitlin range function
 		LinkedList<Variable> rangeParams = new LinkedList<>();
 		Function range = new Function("range", rangeParams);
-		rangeParams.add(Variable.mkVariable("n", range.getStackFrameOffset()));
+		rangeParams.add(Variable.mkVariable("n", 16));
 		functions.put("range", range);
 	}
 
