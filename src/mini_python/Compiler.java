@@ -17,6 +17,10 @@ class Compiler implements TVisitor {
 	int cstId = 0;
 	int jmpLabelId = 0;
 
+	// Keep a trace of temporary values pushed to the stack (used in for loops, for instance)
+	// so that Return statements can clean up if they exit a non-trivial stack frame prematurely
+	int tmpStackValuesCount = 0;
+
 	Compiler() {
 		this.x86_64 = new X86_64();
 	}
@@ -416,6 +420,11 @@ class Compiler implements TVisitor {
 
 	@Override
 	public void visit(TSreturn s) {
+		// The stack may have temporary values on top (such as for-loop index holders)
+		// we will clean them up before beginning the return sequence
+		if (this.tmpStackValuesCount > 0) {
+			x86_64.addq("$" + 8 * this.tmpStackValuesCount, Regs.RSP);
+		}
 
 		// 1. Evaluate the return expression and push it to the stack
 		s.e.accept(this);
@@ -539,11 +548,13 @@ class Compiler implements TVisitor {
 
 		x86_64.pushq(Regs.R14); // Push the index to the stack
 		x86_64.pushq(Regs.R15); // Push the list address to the stack
+		this.tmpStackValuesCount += 2; // Keep track of the number of temporary values pushed to the stack
 
 		s.s.accept(this); // NOTE: this may modify the %r14 and %r15 registers
 
 		x86_64.popq(Regs.R15); // Push the list address to the stack
 		x86_64.popq(Regs.R14); // Push the index to the stack
+		this.tmpStackValuesCount -= 2; // Keep track of the number of temporary values pushed to the stack
 
 		// End: jump back to the loop evaluation
 		x86_64.jmp(loop);
