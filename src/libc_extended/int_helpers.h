@@ -27,10 +27,20 @@ static inline void *mul_int_helper(void *value1, void *value2, void *result)
 
 static inline void *div_int_helper(void *value1, void *value2, void *result)
 {
+    if (get_int_value(value2) == 0)
+    {
+        printf("ZeroDivisionError: division by zero\n");
+        exit(1);
+    }
     set_int_value(result, get_int_value(value1) / get_int_value(value2));
 }
 
 static inline void *mod_int_helper(void *value1, void *value2, void *result)
 {
+    if (get_int_value(value2) == 0)
+    {
+        printf("ZeroDivisionError: modulo by zero\n");
+        exit(1);
+    }
     set_int_value(result, get_int_value(value1) % get_int_value(value2));
 }

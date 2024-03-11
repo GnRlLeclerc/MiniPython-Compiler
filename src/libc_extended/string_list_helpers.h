@@ -71,3 +71,46 @@ static inline void **list_index(void *list, void *index)
 
     return list + 1 + 8 + 8 + index_value * 8;
 }
+
+static inline void mul_string_int_helper(void *value1, void *value2, void *result)
+{
+    if (*((long long *)(value2 + 1 + 8)) > 0)
+    {
+        long long size = *((long long *)(value1 + 1 + 8)) * *((long long *)(value2 + 1 + 8));
+        result = allocate_string(size);
+
+        // Copy the first string
+        strcpy((char *)(result + 1 + 8 + 8), (char *)(value1 + 1 + 8 + 8));
+
+        for (long long i = 1; i < *((long long *)(value2 + 1 + 8)); i++)
+        {
+            strcat((char *)(result + 1 + 8 + 8), (char *)(value1 + 1 + 8 + 8));
+        }
+    }
+    else
+    {
+        result = allocate_string(0);
+    }
+}
+
+static inline void mul_list_int_helper(void *value1, void *value2, void *result)
+{
+    if (*((long long *)(value2 + 1 + 8)) > 0)
+    {
+        long long size = *((long long *)(value1 + 1 + 8)) * *((long long *)(value2 + 1 + 8));
+        result = allocate_list(size);
+
+        for (long long i = 0; i < *((long long *)(value2 + 1 + 8)); i++)
+        {
+            for (long long j = 0; j < *((long long *)(value1 + 1 + 8)); j++)
+            {
+                *((void **)(result + 1 + 8 + 8 + i * *((long long *)(value1 + 1 + 8)) * 8 + j * 8)) = *((void **)(value1 + 1 + 8 + 8 + j * 8));
+                *((long long *)(*((void **)(result + 1 + 8 + 8 + i * *((long long *)(value1 + 1 + 8)) * 8 + j * 8)) + 1)) += 1;
+            }
+        }
+    }
+    else
+    {
+        result = allocate_list(0);
+    }
+}

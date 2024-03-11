@@ -221,7 +221,6 @@ void *add_dynamic(void *value1, void *value2)
 
     return result;
 }
-
 void *add_dynamic_temp_1(void *value1, void *value2)
 {
     // compatible : int & bool
@@ -260,7 +259,6 @@ void *add_dynamic_temp_1(void *value1, void *value2)
         break;
     }
 }
-
 void *add_dynamic_temp_2(void *value1, void *value2)
 {
     // compatible : int & bool
@@ -276,8 +274,45 @@ void *add_dynamic_temp_2(void *value1, void *value2)
     case BOOL_INT64:
     case INT64_BOOL:
     case INT64_INT64:
-        add_int_helper(value1, value2, value1);
+        add_int_helper(value1, value2, value2);
+        return value2;
+
+    case STRING_STRING:
+    {
+        result = add_string_helper(value1, value2);
         free(value2);
+        return result;
+    }
+    case LIST_LIST:
+    {
+        result = add_list_helper(value1, value2);
+        free(value2);
+        return result;
+    }
+
+    default:
+        // Default: unsupported types
+        printf("TypeError: unsupported operand type(s) for +: '%s' and '%s'\n", value_label(value1), value_label(value2));
+        exit(1);
+        break;
+    }
+}
+void *add_dynamic_temp_3(void *value1, void *value2)
+{
+    // compatible : int & bool
+    // string & string
+    // none is never compatible
+
+    void *result = NULL;
+
+    switch (combined_type(value1, value2))
+    {
+    // Boolean and integer addition.
+    case BOOL_BOOL:
+    case BOOL_INT64:
+    case INT64_BOOL:
+    case INT64_INT64:
+        add_int_helper(value1, value2, value1);
         return value1;
 
     case STRING_STRING:
@@ -319,10 +354,8 @@ void *sub_dynamic(void *value1, void *value2)
     case BOOL_INT64:
     case INT64_BOOL:
     case INT64_INT64:
-        // TODO: detect if one of the input values is a temporary one, and reuse it
-        // TODO: garbage collect the other input value if both are temporary
         result = allocate_int64();
-        *((long long *)(result + 1 + 8)) = *((long long *)(value1 + 1 + 8)) - *((long long *)(value2 + 1 + 8));
+        sub_int_helper(value1, value2, result);
         break;
 
     default:
@@ -334,6 +367,73 @@ void *sub_dynamic(void *value1, void *value2)
 
     return result;
 }
+void *sub_dynamic_temp_1(void *value1, void *value2)
+{
+    // compatible : int & bool
+    // all other types are not compatible
+
+    switch (combined_type(value1, value2))
+    {
+    // Boolean and integer addition.
+    case BOOL_BOOL:
+    case BOOL_INT64:
+    case INT64_BOOL:
+    case INT64_INT64:
+        sub_int_helper(value1, value2, value1);
+        return value1;
+
+    default:
+        // Default: unsupported types
+        printf("TypeError: unsupported operand type(s) for -: '%s' and '%s'\n", value_label(value1), value_label(value2));
+        exit(1);
+        break;
+    }
+}
+void *sub_dynamic_temp_2(void *value1, void *value2)
+{
+    // compatible : int & bool
+    // all other types are not compatible
+
+    switch (combined_type(value1, value2))
+    {
+    // Boolean and integer addition.
+    case BOOL_BOOL:
+    case BOOL_INT64:
+    case INT64_BOOL:
+    case INT64_INT64:
+        sub_int_helper(value1, value2, value2);
+        return value2;
+
+    default:
+        // Default: unsupported types
+        printf("TypeError: unsupported operand type(s) for -: '%s' and '%s'\n", value_label(value1), value_label(value2));
+        exit(1);
+        break;
+    }
+}
+void *sub_dynamic_temp_3(void *value1, void *value2)
+{
+    // compatible : int & bool
+    // all other types are not compatible
+
+    switch (combined_type(value1, value2))
+    {
+    // Boolean and integer addition.
+    case BOOL_BOOL:
+    case BOOL_INT64:
+    case INT64_BOOL:
+    case INT64_INT64:
+        sub_int_helper(value1, value2, value1);
+        free(value2);
+        return value1;
+
+    default:
+        // Default: unsupported types
+        printf("TypeError: unsupported operand type(s) for -: '%s' and '%s'\n", value_label(value1), value_label(value2));
+        exit(1);
+        break;
+    }
+}
 
 /** Compare two dynamic values with the "<" operator. If the types are not compatible, the program will exit with an error.
  */
@@ -343,12 +443,49 @@ void *lt_dynamic(void *value1, void *value2)
     *((long long *)(result + 1 + 8)) = is_lt(value1, value2);
     return result;
 }
+void *lt_dynamic_temp_1(void *value1, void *value2)
+{
+    *((long long *)(value1 + 1 + 8)) = is_lt(value1, value2);
+    // update value type
+    // NOTE : if value is big we lose some memory until value is freed
+    *((char *)value1) = BOOL;
+    return value1;
+}
+void *lt_dynamic_temp_2(void *value1, void *value2)
+{
+    *((long long *)(value2 + 1 + 8)) = is_lt(value1, value2);
+    // update value type
+    // NOTE : if value is big we lose some memory until value is freed
+    *((char *)value2) = BOOL;
+    return value2;
+}
+void *lt_dynamic_temp_3(void *value1, void *value2)
+{
+    *((long long *)(value1 + 1 + 8)) = is_lt(value1, value2);
+    // update value type
+    // NOTE : if value is big we lose some memory until value is freed
+    *((char *)value1) = BOOL;
+    free(value2);
+    return value1;
+}
 
 /** Compare two dynamic values with the ">" operator. If the types are not compatible, the program will exit with an error.
  */
 void *gt_dynamic(void *value1, void *value2)
 {
     return lt_dynamic(value2, value1);
+}
+void *gt_dynamic_temp_1(void *value1, void *value2)
+{
+    return lt_dynamic_temp_2(value2, value1);
+}
+void *gt_dynamic_temp_2(void *value1, void *value2)
+{
+    return lt_dynamic_temp_1(value2, value1);
+}
+void *gt_dynamic_temp_3(void *value1, void *value2)
+{
+    return lt_dynamic_temp_3(value2, value1);
 }
 
 /** Compare two dynamic values with the ">=" operator. If the types are not compatible, the program will exit with an error.
@@ -359,12 +496,51 @@ void *ge_dynamic(void *value1, void *value2)
     *((long long *)(result + 1 + 8)) = !(*((long long *)(result + 1 + 8)));
     return result;
 }
+void *ge_dynamic_temp_1(void *value1, void *value2)
+{
+    lt_dynamic_temp_1(value1, value2);
+    *((long long *)(value1 + 1 + 8)) = !(*((long long *)(value1 + 1 + 8)));
+    // update value type
+    // NOTE : if value is big we lose some memory until value is freed
+    *((char *)value1) = BOOL;
+    return value1;
+}
+void *ge_dynamic_temp_2(void *value1, void *value2)
+{
+    lt_dynamic_temp_2(value1, value2);
+    *((long long *)(value2 + 1 + 8)) = !(*((long long *)(value2 + 1 + 8)));
+    // update value type
+    // NOTE : if value is big we lose some memory until value is freed
+    *((char *)value2) = BOOL;
+    return value2;
+}
+void *ge_dynamic_temp_3(void *value1, void *value2)
+{
+    lt_dynamic_temp_3(value1, value2);
+    *((long long *)(value1 + 1 + 8)) = !(*((long long *)(value1 + 1 + 8)));
+    // update value type
+    // NOTE : if value is big we lose some memory until value is freed
+    *((char *)value1) = BOOL;
+    return value1;
+}
 
 /** Compare two dynamic values with the "<=" operator. If the types are not compatible, the program will exit with an error.
  */
 void *le_dynamic(void *value1, void *value2)
 {
     return ge_dynamic(value2, value1);
+}
+void *le_dynamic_temp_1(void *value1, void *value2)
+{
+    return ge_dynamic_temp_2(value2, value1);
+}
+void *le_dynamic_temp_2(void *value1, void *value2)
+{
+    return ge_dynamic_temp_1(value2, value1);
+}
+void *le_dynamic_temp_3(void *value1, void *value2)
+{
+    return ge_dynamic_temp_3(value2, value1);
 }
 
 /** Compute the negation of a value. If the type is incompatible, the program will exit with an error
@@ -396,7 +572,6 @@ void *neg_dynamic(void *value)
     neg_dynamic_helper(value, result);
     return result;
 }
-
 void *neg_dynamic_temp(void *value)
 {
     neg_dynamic_helper(value, value);
@@ -420,69 +595,28 @@ void *mul_dynamic(void *value1, void *value2)
     case BOOL_INT64:
     case INT64_BOOL:
     case INT64_INT64:
-        // TODO: detect if one of the input values is a temporary one, and reuse it
-        // TODO: garbage collect the other input value if both are temporary
         result = allocate_int64();
-        *((long long *)(result + 1 + 8)) = *((long long *)(value1 + 1 + 8)) * *((long long *)(value2 + 1 + 8));
+        mul_int_helper(value1, value2, result);
         break;
 
     case STRING_INT64:
     {
-        // TODO: garbage collect the 2 operands. We allocate a new string.
-        // Compute output size
-        if (*((long long *)(value2 + 1 + 8)) > 0)
-        {
-            long long size = *((long long *)(value1 + 1 + 8)) * *((long long *)(value2 + 1 + 8));
-            result = allocate_string(size);
-
-            // Copy the first string
-            strcpy((char *)(result + 1 + 8 + 8), (char *)(value1 + 1 + 8 + 8));
-
-            for (long long i = 1; i < *((long long *)(value2 + 1 + 8)); i++)
-            {
-                strcat((char *)(result + 1 + 8 + 8), (char *)(value1 + 1 + 8 + 8));
-            }
-        }
-        else
-        {
-            result = allocate_string(0);
-        }
-
+        mul_string_int_helper(value1, value2, result);
         break;
     }
     case INT64_STRING:
     {
-        result = mul_dynamic(value2, value1);
+        mul_string_int_helper(value2, value1, result);
         break;
     }
     case LIST_INT64:
     {
-        // TODO: garbage collect the 2 operands. We allocate a new list.
-        // Compute output size
-        if (*((long long *)(value2 + 1 + 8)) > 0)
-        {
-            long long size = *((long long *)(value1 + 1 + 8)) * *((long long *)(value2 + 1 + 8));
-            result = allocate_list(size);
-
-            for (long long i = 0; i < *((long long *)(value2 + 1 + 8)); i++)
-            {
-                for (long long j = 0; j < *((long long *)(value1 + 1 + 8)); j++)
-                {
-                    *((void **)(result + 1 + 8 + 8 + i * *((long long *)(value1 + 1 + 8)) * 8 + j * 8)) = *((void **)(value1 + 1 + 8 + 8 + j * 8));
-                    *((long long *)(*((void **)(result + 1 + 8 + 8 + i * *((long long *)(value1 + 1 + 8)) * 8 + j * 8)) + 1)) += 1;
-                }
-            }
-        }
-        else
-        {
-            result = allocate_list(0);
-        }
-
+        mul_list_int_helper(value1, value2, result);
         break;
     }
     case INT64_LIST:
     {
-        result = mul_dynamic(value2, value1);
+        mul_list_int_helper(value2, value1, result);
         break;
     }
 
@@ -494,6 +628,166 @@ void *mul_dynamic(void *value1, void *value2)
     }
 
     return result;
+}
+void *mul_dynamic_temp_1(void *value1, void *value2)
+{
+    // compatible : int & bool
+    // string & int
+    // none is never compatible
+
+    switch (combined_type(value1, value2))
+    {
+    // Boolean and integer addition.
+    case BOOL_BOOL:
+    case BOOL_INT64:
+    case INT64_BOOL:
+    case INT64_INT64:
+        mul_int_helper(value1, value2, value1);
+        return value1;
+
+    case STRING_INT64:
+    {
+        void *result = NULL;
+        mul_string_int_helper(value1, value2, result);
+        free(value1);
+        return result;
+    }
+    case INT64_STRING:
+    {
+        void *result = NULL;
+        mul_string_int_helper(value2, value1, result);
+        free(value1);
+        return result;
+    }
+    case LIST_INT64:
+    {
+        void *result = NULL;
+        mul_list_int_helper(value1, value2, result);
+        free(value1);
+        return result;
+    }
+    case INT64_LIST:
+    {
+        void *result = NULL;
+        mul_list_int_helper(value2, value1, result);
+        free(value1);
+        return result;
+    }
+
+    default:
+        // Default: unsupported types
+        printf("TypeError: unsupported operand type(s) for x: '%s' and '%s'\n", value_label(value1), value_label(value2));
+        exit(1);
+        break;
+    }
+}
+void *mul_dynamic_temp_2(void *value1, void *value2)
+{
+    // compatible : int & bool
+    // string & int
+    // none is never compatible
+
+    switch (combined_type(value1, value2))
+    {
+    // Boolean and integer addition.
+    case BOOL_BOOL:
+    case BOOL_INT64:
+    case INT64_BOOL:
+    case INT64_INT64:
+        mul_int_helper(value1, value2, value2);
+        return value2;
+
+    case STRING_INT64:
+    {
+        void *result = NULL;
+        mul_string_int_helper(value1, value2, result);
+        free(value2);
+        return result;
+    }
+    case INT64_STRING:
+    {
+        void *result = NULL;
+        mul_string_int_helper(value2, value1, result);
+        free(value2);
+        return result;
+    }
+    case LIST_INT64:
+    {
+        void *result = NULL;
+        mul_list_int_helper(value1, value2, result);
+        free(value2);
+        return result;
+    }
+    case INT64_LIST:
+    {
+        void *result = NULL;
+        mul_list_int_helper(value2, value1, result);
+        free(value2);
+        return result;
+    }
+
+    default:
+        // Default: unsupported types
+        printf("TypeError: unsupported operand type(s) for x: '%s' and '%s'\n", value_label(value1), value_label(value2));
+        exit(1);
+        break;
+    }
+}
+void *mul_dynamic_temp_3(void *value1, void *value2)
+{
+    // compatible : int & bool
+    // string & int
+    // none is never compatible
+
+    switch (combined_type(value1, value2))
+    {
+    // Boolean and integer addition.
+    case BOOL_BOOL:
+    case BOOL_INT64:
+    case INT64_BOOL:
+    case INT64_INT64:
+        mul_int_helper(value1, value2, value1);
+        return value1;
+
+    case STRING_INT64:
+    {
+        void *result = NULL;
+        mul_string_int_helper(value1, value2, result);
+        free(value1);
+        free(value2);
+        return result;
+    }
+    case INT64_STRING:
+    {
+        void *result = NULL;
+        mul_string_int_helper(value2, value1, result);
+        free(value1);
+        free(value2);
+        return result;
+    }
+    case LIST_INT64:
+    {
+        void *result = NULL;
+        mul_list_int_helper(value1, value2, result);
+        free(value1);
+        free(value2);
+        return result;
+    }
+    case INT64_LIST:
+    {
+        void *result = NULL;
+        mul_list_int_helper(value2, value1, result);
+        free(value1);
+        free(value2);
+        return result;
+    }
+
+    default:
+        // Default: unsupported types
+        printf("TypeError: unsupported operand type(s) for x: '%s' and '%s'\n", value_label(value1), value_label(value2));
+        exit(1);
+        break;
+    }
 }
 
 /** Divide two dynamic values. If the types are not compatible, the program will exit with an error.
@@ -512,15 +806,8 @@ void *div_dynamic(void *value1, void *value2)
     case BOOL_INT64:
     case INT64_BOOL:
     case INT64_INT64:
-        // TODO: detect if one of the input values is a temporary one, and reuse it
-        // TODO: garbage collect the other input value if both are temporary
-        if (*((long long *)(value2 + 1 + 8)) == 0)
-        {
-            printf("ZeroDivisionError: division by zero\n");
-            exit(1);
-        }
         result = allocate_int64();
-        *((long long *)(result + 1 + 8)) = *((long long *)(value1 + 1 + 8)) / *((long long *)(value2 + 1 + 8));
+        div_int_helper(value1, value2, result);
         break;
 
     default:
@@ -531,6 +818,73 @@ void *div_dynamic(void *value1, void *value2)
     }
 
     return result;
+}
+void *div_dynamic_temp_1(void *value1, void *value2)
+{
+    // compatible : int & bool
+    // none is never compatible
+
+    switch (combined_type(value1, value2))
+    {
+    // Boolean and integer addition.
+    case BOOL_BOOL:
+    case BOOL_INT64:
+    case INT64_BOOL:
+    case INT64_INT64:
+        div_int_helper(value1, value2, value1);
+        return value1;
+
+    default:
+        // Default: unsupported types
+        printf("TypeError: unsupported operand type(s) for //: '%s' and '%s'\n", value_label(value1), value_label(value2));
+        exit(1);
+        break;
+    }
+}
+void *div_dynamic_temp_2(void *value1, void *value2)
+{
+    // compatible : int & bool
+    // none is never compatible
+
+    switch (combined_type(value1, value2))
+    {
+    // Boolean and integer addition.
+    case BOOL_BOOL:
+    case BOOL_INT64:
+    case INT64_BOOL:
+    case INT64_INT64:
+        div_int_helper(value1, value2, value2);
+        return value2;
+
+    default:
+        // Default: unsupported types
+        printf("TypeError: unsupported operand type(s) for //: '%s' and '%s'\n", value_label(value1), value_label(value2));
+        exit(1);
+        break;
+    }
+}
+void *div_dynamic_temp_3(void *value1, void *value2)
+{
+    // compatible : int & bool
+    // none is never compatible
+
+    switch (combined_type(value1, value2))
+    {
+    // Boolean and integer addition.
+    case BOOL_BOOL:
+    case BOOL_INT64:
+    case INT64_BOOL:
+    case INT64_INT64:
+        div_int_helper(value1, value2, value1);
+        free(value2);
+        return value1;
+
+    default:
+        // Default: unsupported types
+        printf("TypeError: unsupported operand type(s) for //: '%s' and '%s'\n", value_label(value1), value_label(value2));
+        exit(1);
+        break;
+    }
 }
 
 /** Get the modulus of two dynamic values. If the types are not compatible, the program will exit with an error.
@@ -549,15 +903,8 @@ void *mod_dynamic(void *value1, void *value2)
     case BOOL_INT64:
     case INT64_BOOL:
     case INT64_INT64:
-        // TODO: detect if one of the input values is a temporary one, and reuse it
-        // TODO: garbage collect the other input value if both are temporary
-        if (*((long long *)(value2 + 1 + 8)) == 0)
-        {
-            printf("ZeroDivisionError: modulo by zero\n");
-            exit(1);
-        }
         result = allocate_int64();
-        *((long long *)(result + 1 + 8)) = *((long long *)(value1 + 1 + 8)) % *((long long *)(value2 + 1 + 8));
+        mod_int_helper(value1, value2, result);
         break;
 
     default:
@@ -569,6 +916,73 @@ void *mod_dynamic(void *value1, void *value2)
 
     return result;
 }
+void *mod_dynamic_temp_1(void *value1, void *value2)
+{
+    // compatible : int & bool
+    // none is never compatible
+
+    switch (combined_type(value1, value2))
+    {
+    // Boolean and integer addition.
+    case BOOL_BOOL:
+    case BOOL_INT64:
+    case INT64_BOOL:
+    case INT64_INT64:
+        mod_int_helper(value1, value2, value1);
+        return value1;
+
+    default:
+        // Default: unsupported types
+        printf("TypeError: unsupported operand type(s) for %%: '%s' and '%s'\n", value_label(value1), value_label(value2));
+        exit(1);
+        break;
+    }
+}
+void *mod_dynamic_temp_2(void *value1, void *value2)
+{
+    // compatible : int & bool
+    // none is never compatible
+
+    switch (combined_type(value1, value2))
+    {
+    // Boolean and integer addition.
+    case BOOL_BOOL:
+    case BOOL_INT64:
+    case INT64_BOOL:
+    case INT64_INT64:
+        mod_int_helper(value1, value2, value2);
+        return value2;
+
+    default:
+        // Default: unsupported types
+        printf("TypeError: unsupported operand type(s) for %%: '%s' and '%s'\n", value_label(value1), value_label(value2));
+        exit(1);
+        break;
+    }
+}
+void *mod_dynamic_temp_3(void *value1, void *value2)
+{
+    // compatible : int & bool
+    // none is never compatible
+
+    switch (combined_type(value1, value2))
+    {
+    // Boolean and integer addition.
+    case BOOL_BOOL:
+    case BOOL_INT64:
+    case INT64_BOOL:
+    case INT64_INT64:
+        mod_int_helper(value1, value2, value1);
+        free(value2);
+        return value1;
+
+    default:
+        // Default: unsupported types
+        printf("TypeError: unsupported operand type(s) for %%: '%s' and '%s'\n", value_label(value1), value_label(value2));
+        exit(1);
+        break;
+    }
+}
 
 /** Compute the truthyness of a value. If the type is incompatible, the program will exit with an error */
 void *truthy_dynamic(void *value)
@@ -577,6 +991,15 @@ void *truthy_dynamic(void *value)
     void *result = allocate_bool();
     *((long long *)(result + 1 + 8)) = is_truthy(value);
     return result;
+}
+void *truthy_dynamic_temp(void *value)
+{
+    // Compatible: all types can be coerced to a truthy or falsy value
+    *((long long *)(value + 1 + 8)) = is_truthy(value);
+    // update value type
+    // NOTE : if value is big we lose some memory until value is freed
+    *((char *)value) = BOOL;
+    return value;
 }
 
 /** Compute the not operation for a value. If the type is incompatible, the program will exit with an error */
@@ -596,6 +1019,9 @@ void *not_dynamic(void *value)
 void *not_dynamic_temp(void *value)
 {
     not_dynamic_helper(value, value);
+    // update value type
+    // NOTE : if value is big we lose some memory until value is freed
+    *((char *)value) = BOOL;
     return value;
 }
 
@@ -606,6 +1032,31 @@ void *and_dynamic(void *value1, void *value2)
     *((long long *)(result + 1 + 8)) = is_truthy(value1) && is_truthy(value2);
     return result;
 }
+void *and_dynamic_temp_1(void *value1, void *value2)
+{
+    *((long long *)(value1 + 1 + 8)) = is_truthy(value1) && is_truthy(value2);
+    // update value type
+    // NOTE : if value is big we lose some memory until value is freed
+    *((char *)value1) = BOOL;
+    return value1;
+}
+void *and_dynamic_temp_2(void *value1, void *value2)
+{
+    *((long long *)(value2 + 1 + 8)) = is_truthy(value1) && is_truthy(value2);
+    // update value type
+    // NOTE : if value is big we lose some memory until value is freed
+    *((char *)value2) = BOOL;
+    return value2;
+}
+void *and_dynamic_temp_3(void *value1, void *value2)
+{
+    *((long long *)(value1 + 1 + 8)) = is_truthy(value1) && is_truthy(value2);
+    // update value type
+    // NOTE : if value is big we lose some memory until value is freed
+    *((char *)value1) = BOOL;
+    free(value2);
+    return value1;
+}
 
 /** Compute the or operation for two values. If the types are incompatible, the program will exit with an error */
 void *or_dynamic(void *value1, void *value2)
@@ -613,6 +1064,31 @@ void *or_dynamic(void *value1, void *value2)
     void *result = allocate_bool();
     *((long long *)(result + 1 + 8)) = is_truthy(value1) || is_truthy(value2);
     return result;
+}
+void *or_dynamic_temp_1(void *value1, void *value2)
+{
+    *((long long *)(value1 + 1 + 8)) = is_truthy(value1) || is_truthy(value2);
+    // update value type
+    // NOTE : if value is big we lose some memory until value is freed
+    *((char *)value1) = BOOL;
+    return value1;
+}
+void *or_dynamic_temp_2(void *value1, void *value2)
+{
+    *((long long *)(value2 + 1 + 8)) = is_truthy(value1) || is_truthy(value2);
+    // update value type
+    // NOTE : if value is big we lose some memory until value is freed
+    *((char *)value2) = BOOL;
+    return value2;
+}
+void *or_dynamic_temp_3(void *value1, void *value2)
+{
+    *((long long *)(value1 + 1 + 8)) = is_truthy(value1) || is_truthy(value2);
+    // update value type
+    // NOTE : if value is big we lose some memory until value is freed
+    *((char *)value1) = BOOL;
+    free(value2);
+    return value1;
 }
 
 /** Compute the == operation for two values. If the types are incompatible, the program will exit with an error */
@@ -622,6 +1098,31 @@ void *eq_dynamic(void *value1, void *value2)
     *((long long *)(result + 1 + 8)) = is_equal(value1, value2);
     return result;
 }
+void *eq_dynamic_temp_1(void *value1, void *value2)
+{
+    *((long long *)(value1 + 1 + 8)) = is_equal(value1, value2);
+    // update value type
+    // NOTE : if value is big we lose some memory until value is freed
+    *((char *)value1) = BOOL;
+    return value1;
+}
+void *eq_dynamic_temp_2(void *value1, void *value2)
+{
+    *((long long *)(value2 + 1 + 8)) = is_equal(value1, value2);
+    // update value type
+    // NOTE : if value is big we lose some memory until value is freed
+    *((char *)value2) = BOOL;
+    return value2;
+}
+void *eq_dynamic_temp_3(void *value1, void *value2)
+{
+    *((long long *)(value1 + 1 + 8)) = is_equal(value1, value2);
+    // update value type
+    // NOTE : if value is big we lose some memory until value is freed
+    *((char *)value1) = BOOL;
+    free(value2);
+    return value1;
+}
 
 /** Compute the != operation for two values. If the types are incompatible, the program will exit with an error */
 void *neq_dynamic(void *value1, void *value2)
@@ -629,6 +1130,24 @@ void *neq_dynamic(void *value1, void *value2)
     void *result = eq_dynamic(value1, value2);
     *((long long *)(result + 1 + 8)) = !(*((long long *)(result + 1 + 8)));
     return result;
+}
+void *neq_dynamic_temp_1(void *value1, void *value2)
+{
+    eq_dynamic_temp_1(value1, value2);
+    *((long long *)(value1 + 1 + 8)) = !(*((long long *)(value1 + 1 + 8)));
+    return value1;
+}
+void *neq_dynamic_temp_2(void *value1, void *value2)
+{
+    eq_dynamic_temp_2(value1, value2);
+    *((long long *)(value2 + 1 + 8)) = !(*((long long *)(value2 + 1 + 8)));
+    return value2;
+}
+void *neq_dynamic_temp_3(void *value1, void *value2)
+{
+    eq_dynamic_temp_3(value1, value2);
+    *((long long *)(value1 + 1 + 8)) = !(*((long long *)(value1 + 1 + 8)));
+    return value1;
 }
 
 /** Compute the length of a dynamic value. Only works for strings and lists */

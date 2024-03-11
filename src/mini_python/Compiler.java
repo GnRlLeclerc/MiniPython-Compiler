@@ -201,38 +201,38 @@ class Compiler implements TVisitor {
 		x86_64.popq(Regs.RSI); // %rsi = 2nd value
 		x86_64.popq(Regs.RDI); // %rdi = 1st value
 
+		String suffix = "";
+		if (e.e1.temporary && e.e2.temporary) {
+			suffix = "_temp_3";
+		} else if (e.e1.temporary) {
+			suffix = "_temp_1";
+		} else if (e.e2.temporary) {
+			suffix = "_temp_2";
+		}
+
 		switch (e.op) {
-			case Badd -> {
-				if (e.e1.temporary) {
-					if (e.e2.temporary) {
-						callExtendedLibc(ExtendedLibc.ADD_DYNAMIC, "_temp_2");
-					} else {
-						callExtendedLibc(ExtendedLibc.ADD_DYNAMIC, "_temp_1");
-					}
-				} else {
-					callExtendedLibc(ExtendedLibc.ADD_DYNAMIC);
-				}
-			}
+			case Badd -> 
+				callExtendedLibc(ExtendedLibc.ADD_DYNAMIC, suffix);
 			case Bsub ->
-				callExtendedLibc(ExtendedLibc.SUB_DYNAMIC);
+				callExtendedLibc(ExtendedLibc.SUB_DYNAMIC, suffix);
 			case Blt ->
-				callExtendedLibc(ExtendedLibc.LT_DYNAMIC);
+				callExtendedLibc(ExtendedLibc.LT_DYNAMIC, suffix);
 			case Bmul ->
-				callExtendedLibc(ExtendedLibc.MUL_DYNAMIC);
+				callExtendedLibc(ExtendedLibc.MUL_DYNAMIC, suffix);
 			case Bgt ->
-				callExtendedLibc(ExtendedLibc.GT_DYNAMIC);
+				callExtendedLibc(ExtendedLibc.GT_DYNAMIC, suffix);
 			case Bdiv ->
-				callExtendedLibc(ExtendedLibc.DIV_DYNAMIC);
+				callExtendedLibc(ExtendedLibc.DIV_DYNAMIC, suffix);
 			case Bmod ->
-				callExtendedLibc(ExtendedLibc.MOD_DYNAMIC);
+				callExtendedLibc(ExtendedLibc.MOD_DYNAMIC, suffix);
 			case Beq ->
-				callExtendedLibc(ExtendedLibc.EQ_DYNAMIC);
+				callExtendedLibc(ExtendedLibc.EQ_DYNAMIC, suffix);
 			case Bneq ->
-				callExtendedLibc(ExtendedLibc.NEQ_DYNAMIC);
+				callExtendedLibc(ExtendedLibc.NEQ_DYNAMIC, suffix);
 			case Bge ->
-				callExtendedLibc(ExtendedLibc.GE_DYNAMIC);
+				callExtendedLibc(ExtendedLibc.GE_DYNAMIC, suffix);
 			case Ble ->
-				callExtendedLibc(ExtendedLibc.LE_DYNAMIC);
+				callExtendedLibc(ExtendedLibc.LE_DYNAMIC, suffix);
 
 			default -> throw new Todo("Binop: " + e.op);
 		}
