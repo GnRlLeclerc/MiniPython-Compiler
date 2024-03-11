@@ -128,11 +128,16 @@ class Compiler implements TVisitor {
 					// Accept the first value and push it to the stack
 					e.e1.accept(this);
 
+					String suffix_1 = "";
+					if (e.e1.temporary) {
+						suffix_1 = "_temp";
+					}
+
 					// Pop it to the 1st argument register
 					x86_64.popq(Regs.RDI);
 
 					// Call the truthy_dynamic extended libc function
-					callExtendedLibc(ExtendedLibc.TRUTHY_DYNAMIC);
+					callExtendedLibc(ExtendedLibc.TRUTHY_DYNAMIC, suffix_1);
 
 					// Compare the value to 0 and finish lazy evaluation if it is 0
 					x86_64.cmpq(0, "9(%rax)");
@@ -141,11 +146,16 @@ class Compiler implements TVisitor {
 					// Else, accept the second value and push it to the stack
 					e.e2.accept(this);
 
+					String suffix_2 = "";
+					if (e.e2.temporary) {
+						suffix_2 = "_temp";
+					}
+
 					// Pop it to the 1st argument register
 					x86_64.popq(Regs.RDI);
 
 					// Call the truthy_dynamic extended libc function, we will push the result straight to the stack
-					callExtendedLibc(ExtendedLibc.TRUTHY_DYNAMIC);
+					callExtendedLibc(ExtendedLibc.TRUTHY_DYNAMIC, suffix_2);
 
 					x86_64.label(next);
 					x86_64.pushq(Regs.RAX);
@@ -157,11 +167,16 @@ class Compiler implements TVisitor {
 				// Accept the first value and push it to the stack
 				e.e1.accept(this);
 
+				String suffix_1 = "";
+				if (e.e1.temporary) {
+					suffix_1 = "_temp";
+				}
+
 				// Pop it to the 1st argument register
 				x86_64.popq(Regs.RDI);
 
 				// Call the truthy_dynamic extended libc function
-				callExtendedLibc(ExtendedLibc.TRUTHY_DYNAMIC);
+				callExtendedLibc(ExtendedLibc.TRUTHY_DYNAMIC, suffix_1);
 
 				// Compare the value to 0 and finish lazy evaluation if it is 1
 				x86_64.cmpq(1, "9(%rax)");
@@ -170,11 +185,16 @@ class Compiler implements TVisitor {
 				// Else, accept the second value and push it to the stack
 				e.e2.accept(this);
 
+				String suffix_2 = "";
+				if (e.e2.temporary) {
+					suffix_2 = "_temp";
+				}
+
 				// Pop it to the 1st argument register
 				x86_64.popq(Regs.RDI);
 
 				// Call the truthy_dynamic extended libc function, we will push the result straight to the stack
-				callExtendedLibc(ExtendedLibc.TRUTHY_DYNAMIC);
+				callExtendedLibc(ExtendedLibc.TRUTHY_DYNAMIC, suffix_2);
 
 				x86_64.label(next);
 				x86_64.pushq(Regs.RAX);
