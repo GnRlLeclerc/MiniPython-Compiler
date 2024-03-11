@@ -93,7 +93,13 @@ class Compile {
 			// compiler.x86_64.pushq((i + 2) * 8 + "(%rbp)"); // Push the argument to the stack
 		// }
 
-		// Allocate stack space for the local variables of the function		
+		// Allocate stack space for the local variables of the function	
+		// Force allocation of an even number of local variables to ensure stack alignment
+		if (-def.f.localVariablesOffset % 16 != 0) {
+			def.f.localVariablesOffset -= 8;
+		}
+
+
 		int additionalOffset = def.f.localVariablesOffset; // Do not add parameters, that were already added to the stack frame
 		if (additionalOffset != 0) {
 			compiler.x86_64.subq("$" + -additionalOffset, Regs.RSP);

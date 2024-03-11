@@ -315,7 +315,15 @@ class Compiler implements TVisitor {
 		// instead of copying the arguments to the new stack frame.
 		// When registering a function, the arguments are given increasing offsets from the stack frame, in order.
 		List<TExpr> exprList = e.l;
-		for (int i = exprList.size() - 1; i >= 0; i--) {
+		int paramCount = exprList.size();
+		boolean isOdd = paramCount % 2 == 1;
+
+		if(isOdd){
+			// We need to align the stack to 16 bytes
+			x86_64.pushq("$0");
+		}
+
+		for (int i = paramCount - 1; i >= 0; i--) {
 			TExpr expr = exprList.get(i);
 			expr.accept(this);
 		}
@@ -323,8 +331,8 @@ class Compiler implements TVisitor {
 		// 3. Call the function
 		x86_64.call("func_" + e.f.name);
 
-		// 4. Remove the arguments from the stack
-		x86_64.addq("$" + 8 * e.l.size(), Regs.RSP);
+		// 4. Remove the arguments from the stack (and the padding for alignment if needed if needed)
+		x86_64.addq("$" + 8 * (e.l.size() + (isOdd ? 1 : 0)), Regs.RSP);
 
 		// 5. Push the returned value to the stack
 		x86_64.pushq(Regs.RAX);
@@ -791,6 +799,9 @@ class Compiler implements TVisitor {
 	// This means that we spend less time computing the current stack alignment and storing it, and we align it with a simple
 	// pushq. Very nice ! Warning: take into account the main function allocating space for its own local variables !
 
+	// ===> This way, no stack particular stack alignment must be performed, as the natural way of doing everything
+	// ===> will keep the stack aligned to 16 bytes.
+
 	/**
 	 * Align the stack to 16 bytes by allocating enough space given the current
 	 * stack alignment offset.
@@ -798,9 +809,9 @@ class Compiler implements TVisitor {
 	 */
 	private void alignStack() {
 		// Compute the current stack alignment offset and store it in a callee-saved register, %r12
-		x86_64.movq(Regs.RSP, Regs.R12);
-		x86_64.andq("$8", Regs.R12); // %r12 will either be 0 (aligned stack) or 8 (misaligned stack by 8 bytes)
-		x86_64.subq(Regs.R12, Regs.RSP); // Allocate enough space to align the stack to 16 bytes
+		// x86_64.movq(Regs.RSP, Regs.R12);
+		// x86_64.andq("$8", Regs.R12); // %r12 will either be 0 (aligned stack) or 8 (misaligned stack by 8 bytes)
+		// x86_64.subq(Regs.R12, Regs.RSP); // Allocate enough space to align the stack to 16 bytes
 	}
 
 	/**
@@ -811,7 +822,7 @@ class Compiler implements TVisitor {
 	 */
 	private void unalignStack() {
 		// Restore the stack alignment offset.
-		x86_64.addq(Regs.R12, Regs.RSP);
+		// x86_64.addq(Regs.R12, Regs.RSP);
 	}
 
 
