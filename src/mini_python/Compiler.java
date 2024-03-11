@@ -238,6 +238,13 @@ class Compiler implements TVisitor {
 		// 2. Pop the result from the stack onto a usual register
 		x86_64.popq(Regs.RDI);
 
+		if (e.e.temporary) {
+			// set RSI to 1 if the temporary value is truthy, 0 otherwise
+			x86_64.movq("$1", Regs.RSI);
+		} else {
+			x86_64.movq("$0", Regs.RSI);
+		}
+
 		if (debug) {
 			System.out.println("Unop: " + e.op);
 		}

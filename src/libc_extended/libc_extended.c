@@ -551,12 +551,20 @@ void *le_dynamic(void *value1, void *value2)
 
 /** Compute the negation of a value. If the type is incompatible, the program will exit with an error
  */
-void *neg_dynamic(void *value)
+void *neg_dynamic(void *value, int temporary_tag)
 {
     // Compatible: int and bool -> int
     // All others are not
 
-    void *result = allocate_int64();
+    void *result;
+    if (temporary_tag)
+    {
+        result = value;
+    }
+    else
+    {
+        result = allocate_int64();
+    }
 
     switch (type_value(value))
     {
@@ -755,11 +763,21 @@ void *truthy_dynamic(void *value)
 }
 
 /** Compute the not operation for a value. If the type is incompatible, the program will exit with an error */
-void *not_dynamic(void *value)
+void *not_dynamic(void *value, int temporary_tag)
 {
-    void *result = truthy_dynamic(value);
-    *((long long *)(result + 1 + 8)) = !(*((long long *)(result + 1 + 8)));
-    return result;
+    if (temporary_tag)
+    {
+        // for type checking, TODO = keep
+        // truthy_dynamic(value);
+        *((long long *)(value + 1 + 8)) = !(*((long long *)(value + 1 + 8)));
+        return value;
+    }
+    else
+    {
+        void *result = truthy_dynamic(value);
+        *((long long *)(result + 1 + 8)) = !(*((long long *)(result + 1 + 8)));
+        return result;
+    }
 }
 
 /** Compute the and operation for two values. If the types are incompatible, the program will exit with an error */
