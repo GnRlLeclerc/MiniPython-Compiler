@@ -1,3 +1,6 @@
+#ifndef INCLUDE_TYPE_HELPERS
+#define INCLUDE_TYPE_HELPERS
+
 static inline char *type_label(char type)
 {
     switch (type)
@@ -36,3 +39,5 @@ static inline char combined_type(void *value1, void *value2)
 {
     return (type_value(value1) << 3) + type_value(value2);
 }
+
+#endif

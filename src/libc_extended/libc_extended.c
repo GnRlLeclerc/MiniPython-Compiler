@@ -158,31 +158,6 @@ static inline int is_lt(void *value1, void *value2)
     }
 }
 
-/** Computes the list address corresponding to the index.
- * Does the type and boundary checks
- */
-static inline void **list_index(void *list, void *index)
-{
-    // 1. Check that the index has the right type
-    if (type_value(index) != INT64 && type_value(index) != BOOL)
-    {
-        printf("TypeError: list indices must be integers, not %s\n", value_label(index));
-        exit(1);
-    }
-
-    // 2. Check that the index is within the list bounds
-    long long list_size = *((long long *)(list + 1 + 8));
-    long long index_value = *((long long *)(index + 1 + 8));
-
-    if (index_value < 0 || index_value >= list_size)
-    {
-        printf("IndexError: list assignment index %lld out of range for size %lld\n", index_value, list_size);
-        exit(1);
-    }
-
-    return list + 1 + 8 + 8 + index_value * 8;
-}
-
 /** Set list[index] = value, with arguments all being dynamic */
 void set_element(void *list, void *index, void *value)
 {
@@ -245,6 +220,87 @@ void *add_dynamic(void *value1, void *value2)
     }
 
     return result;
+}
+
+void *add_dynamic_temp_1(void *value1, void *value2)
+{
+    // compatible : int & bool
+    // string & string
+    // none is never compatible
+
+    void *result = NULL;
+
+    switch (combined_type(value1, value2))
+    {
+    // Boolean and integer addition.
+    case BOOL_BOOL:
+    case BOOL_INT64:
+    case INT64_BOOL:
+    case INT64_INT64:
+        add_int_helper(value1, value2, value1);
+        return value1;
+
+    case STRING_STRING:
+    {
+        result = add_string_helper(value1, value2);
+        free(value1);
+        return result;
+    }
+    case LIST_LIST:
+    {
+        result = add_list_helper(value1, value2);
+        free(value1);
+        return result;
+    }
+
+    default:
+        // Default: unsupported types
+        printf("TypeError: unsupported operand type(s) for +: '%s' and '%s'\n", value_label(value1), value_label(value2));
+        exit(1);
+        break;
+    }
+}
+
+void *add_dynamic_temp_2(void *value1, void *value2)
+{
+    // compatible : int & bool
+    // string & string
+    // none is never compatible
+
+    void *result = NULL;
+
+    switch (combined_type(value1, value2))
+    {
+    // Boolean and integer addition.
+    case BOOL_BOOL:
+    case BOOL_INT64:
+    case INT64_BOOL:
+    case INT64_INT64:
+        add_int_helper(value1, value2, value1);
+        free(value2);
+        return value1;
+
+    case STRING_STRING:
+    {
+        result = add_string_helper(value1, value2);
+        free(value1);
+        free(value2);
+        return result;
+    }
+    case LIST_LIST:
+    {
+        result = add_list_helper(value1, value2);
+        free(value1);
+        free(value2);
+        return result;
+    }
+
+    default:
+        // Default: unsupported types
+        printf("TypeError: unsupported operand type(s) for +: '%s' and '%s'\n", value_label(value1), value_label(value2));
+        exit(1);
+        break;
+    }
 }
 
 /** Subtract two dynamic values. If the types are not compatible, the program will exit with an error.

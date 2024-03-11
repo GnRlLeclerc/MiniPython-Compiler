@@ -202,8 +202,17 @@ class Compiler implements TVisitor {
 		x86_64.popq(Regs.RDI); // %rdi = 1st value
 
 		switch (e.op) {
-			case Badd ->
-				callExtendedLibc(ExtendedLibc.ADD_DYNAMIC);
+			case Badd -> {
+				if (e.e1.temporary) {
+					if (e.e2.temporary) {
+						callExtendedLibc(ExtendedLibc.ADD_DYNAMIC, "_temp_2");
+					} else {
+						callExtendedLibc(ExtendedLibc.ADD_DYNAMIC, "_temp_1");
+					}
+				} else {
+					callExtendedLibc(ExtendedLibc.ADD_DYNAMIC);
+				}
+			}
 			case Bsub ->
 				callExtendedLibc(ExtendedLibc.SUB_DYNAMIC);
 			case Blt ->
