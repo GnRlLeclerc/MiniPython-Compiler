@@ -623,8 +623,6 @@ void *mul_dynamic(void *value1, void *value2)
     // string & int
     // none is never compatible
 
-    void *result = NULL;
-
     switch (combined_type(value1, value2))
     {
     // Boolean and integer addition.
@@ -632,29 +630,37 @@ void *mul_dynamic(void *value1, void *value2)
     case BOOL_INT64:
     case INT64_BOOL:
     case INT64_INT64:
-        result = allocate_int64();
+        void *result = allocate_int64();
         mul_int_helper(value1, value2, result);
-        break;
+        return result;
 
     case STRING_INT64:
     {
+        void *result = NULL;
+        long long value2_int = get_int_value(value2);
+        long long size = get_size(value1) * value2_int;
+        result = allocate_string(size);
         mul_string_int_helper(value1, value2, result);
-        break;
+        return result;
     }
     case INT64_STRING:
     {
+        void *result = NULL;
+        long long value1_int = get_int_value(value1);
+        long long size = get_size(value2) * value1_int;
+        result = allocate_string(size);
         mul_string_int_helper(value2, value1, result);
-        break;
+        return result;
     }
     case LIST_INT64:
     {
-        mul_list_int_helper(value1, value2, result);
-        break;
+        void *result = mul_list_int_helper(value1, value2);
+        return result;
     }
     case INT64_LIST:
     {
-        mul_list_int_helper(value2, value1, result);
-        break;
+        void *result = mul_list_int_helper(value2, value1);
+        return result;
     }
 
     default:
@@ -663,8 +669,6 @@ void *mul_dynamic(void *value1, void *value2)
         exit(1);
         break;
     }
-
-    return result;
 }
 void *mul_dynamic_temp_1(void *value1, void *value2)
 {
@@ -685,6 +689,9 @@ void *mul_dynamic_temp_1(void *value1, void *value2)
     case STRING_INT64:
     {
         void *result = NULL;
+        long long value2_int = get_int_value(value2);
+        long long size = get_size(value1) * value2_int;
+        result = allocate_string(size);
         mul_string_int_helper(value1, value2, result);
         free(value1);
         return result;
@@ -692,21 +699,22 @@ void *mul_dynamic_temp_1(void *value1, void *value2)
     case INT64_STRING:
     {
         void *result = NULL;
+        long long value1_int = get_int_value(value1);
+        long long size = get_size(value2) * value1_int;
+        result = allocate_string(size);
         mul_string_int_helper(value2, value1, result);
         free(value1);
         return result;
     }
     case LIST_INT64:
     {
-        void *result = NULL;
-        mul_list_int_helper(value1, value2, result);
+        void *result = mul_list_int_helper(value1, value2);
         free(value1);
         return result;
     }
     case INT64_LIST:
     {
-        void *result = NULL;
-        mul_list_int_helper(value2, value1, result);
+        void *result = mul_list_int_helper(value2, value1);
         free(value1);
         return result;
     }
@@ -737,6 +745,9 @@ void *mul_dynamic_temp_2(void *value1, void *value2)
     case STRING_INT64:
     {
         void *result = NULL;
+        long long value2_int = get_int_value(value2);
+        long long size = get_size(value1) * value2_int;
+        result = allocate_string(size);
         mul_string_int_helper(value1, value2, result);
         free(value2);
         return result;
@@ -744,21 +755,22 @@ void *mul_dynamic_temp_2(void *value1, void *value2)
     case INT64_STRING:
     {
         void *result = NULL;
+        long long value1_int = get_int_value(value1);
+        long long size = get_size(value2) * value1_int;
+        result = allocate_string(size);
         mul_string_int_helper(value2, value1, result);
         free(value2);
         return result;
     }
     case LIST_INT64:
     {
-        void *result = NULL;
-        mul_list_int_helper(value1, value2, result);
+        void *result = mul_list_int_helper(value1, value2);
         free(value2);
         return result;
     }
     case INT64_LIST:
     {
-        void *result = NULL;
-        mul_list_int_helper(value2, value1, result);
+        void *result = mul_list_int_helper(value2, value1);
         free(value2);
         return result;
     }
@@ -789,6 +801,9 @@ void *mul_dynamic_temp_3(void *value1, void *value2)
     case STRING_INT64:
     {
         void *result = NULL;
+        long long value2_int = get_int_value(value2);
+        long long size = get_size(value1) * value2_int;
+        result = allocate_string(size);
         mul_string_int_helper(value1, value2, result);
         free(value1);
         free(value2);
@@ -797,6 +812,9 @@ void *mul_dynamic_temp_3(void *value1, void *value2)
     case INT64_STRING:
     {
         void *result = NULL;
+        long long value1_int = get_int_value(value1);
+        long long size = get_size(value2) * value1_int;
+        result = allocate_string(size);
         mul_string_int_helper(value2, value1, result);
         free(value1);
         free(value2);
@@ -804,16 +822,14 @@ void *mul_dynamic_temp_3(void *value1, void *value2)
     }
     case LIST_INT64:
     {
-        void *result = NULL;
-        mul_list_int_helper(value1, value2, result);
+        void *result = mul_list_int_helper(value1, value2);
         free(value1);
         free(value2);
         return result;
     }
     case INT64_LIST:
     {
-        void *result = NULL;
-        mul_list_int_helper(value2, value1, result);
+        void *result = mul_list_int_helper(value2, value1);
         free(value1);
         free(value2);
         return result;

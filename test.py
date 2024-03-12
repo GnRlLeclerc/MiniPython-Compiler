@@ -1,2 +1,2 @@
-a = "t"
-print(a + "s")
+print("a")
+print(["a"])

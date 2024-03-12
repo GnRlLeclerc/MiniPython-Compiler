@@ -87,9 +87,6 @@ static inline void mul_string_int_helper(void *value1, void *value2, void *resul
     long long value2_int = get_int_value(value2);
     if (value2_int > 0)
     {
-        long long size = get_size(value1) * value2_int;
-        result = allocate_string(size);
-
         void *value1_string = get_string_value(value1);
         void *result_string = get_string_value(result);
 
@@ -101,14 +98,11 @@ static inline void mul_string_int_helper(void *value1, void *value2, void *resul
             strcat(result_string, value1_string);
         }
     }
-    else
-    {
-        result = allocate_string(0);
-    }
 }
 
-static inline void mul_list_int_helper(void *value1, void *value2, void *result)
+static inline void *mul_list_int_helper(void *value1, void *value2)
 {
+    void *result;
     if (*((long long *)(value2 + 1 + 8)) > 0)
     {
         long long size = *((long long *)(value1 + 1 + 8)) * *((long long *)(value2 + 1 + 8));
@@ -127,6 +121,7 @@ static inline void mul_list_int_helper(void *value1, void *value2, void *result)
     {
         result = allocate_list(0);
     }
+    return result;
 }
 
 #endif
