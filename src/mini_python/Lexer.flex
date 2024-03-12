@@ -157,26 +157,24 @@ Integer            = "0" | [1-9] [:digit:]*
     { return symbol(IN); }
 
     "None"
-    { return symbol(CST, Constant.None); }
+    { return symbol(CST, new Cnone(new Location(yyline, yycolumn))); }
 
     "True"
-    { return symbol(CST, new Cbool(true)); }
+    { return symbol(CST, new Cbool(new Location(yyline, yycolumn), true)); }
 
     "False"
-    { return symbol(CST, new Cbool(false)); }
+    { return symbol(CST, new Cbool(new Location(yyline, yycolumn), false)); }
 
     {Identifier}
-    { return symbol(IDENT,
-                    new Ident(yytext().intern(),
-                              new Location(yyline, yycolumn))); }
+    { return symbol(IDENT, new Ident(yytext().intern(), new Location(yyline, yycolumn))); }
     // The call to intern() allows identifiers to be compared using == .
 
     {String}
     { String s = yytext();
-      return symbol(CST, new Cstring(s.substring(1, s.length() - 1))); }
+      return symbol(CST, new Cstring(new Location(yyline, yycolumn), s.substring(1, s.length() - 1))); }
 
     {Integer}
-    { return symbol(CST, new Cint(Long.parseLong(yytext()))); }
+    { return symbol(CST, new Cint(new Location(yyline, yycolumn), Long.parseLong(yytext()))); }
 
     ({WhiteSpace} | {Comment})+
     { /* ignore */ }

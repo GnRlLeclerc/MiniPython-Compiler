@@ -1,5 +1,6 @@
 package mini_python.syntax.constants;
 
+import mini_python.syntax.Location;
 import mini_python.syntax.visitors.TVisitor;
 import mini_python.syntax.visitors.Visitor;
 import mini_python.typing.Type;
@@ -9,7 +10,8 @@ import mini_python.typing.Type;
 public class Cstring extends Constant {
     public final String s;
 
-    public Cstring(String s) {
+    public Cstring(Location loc, String s) {
+        super(loc);
         this.s = s;
     }
 

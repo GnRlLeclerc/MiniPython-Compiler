@@ -1,5 +1,6 @@
 package mini_python.syntax.constants;
 
+import mini_python.syntax.Location;
 import mini_python.syntax.visitors.TVisitor;
 import mini_python.syntax.visitors.Visitor;
 import mini_python.typing.Type;
@@ -7,7 +8,8 @@ import mini_python.typing.Type;
 public class Cbool extends Constant {
     public final boolean b;
 
-    public Cbool(boolean b) {
+    public Cbool(Location loc, boolean b) {
+        super(loc);
         this.b = b;
     }
 

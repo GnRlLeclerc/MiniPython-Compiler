@@ -1,5 +1,6 @@
 package mini_python.syntax.constants;
 
+import mini_python.syntax.Location;
 import mini_python.syntax.visitors.TVisitor;
 import mini_python.syntax.visitors.Visitor;
 import mini_python.typing.Type;
@@ -7,7 +8,8 @@ import mini_python.typing.Type;
 public class Cint extends Constant {
     public final long i; // Python has arbitrary-precision integers; we simplify here
 
-    public Cint(long i) {
+    public Cint(Location loc, long i) {
+        super(loc);
         this.i = i;
     }
 
