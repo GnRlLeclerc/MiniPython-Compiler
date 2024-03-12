@@ -13,13 +13,14 @@ public class MyParser extends parser {
 		// Override this method to be silent.
 	}
 
-	public void report_fatal_error(String message, Object info)
-			throws Exception {
+	public void report_fatal_error(String message, Object info) throws Exception {
 		// Override this method to be silent and throw an exception that
 		// contains the error message.
 		message = "syntax error\n";
 		if (info instanceof Symbol) {
 			Symbol symbol = (Symbol) info;
+			System.out.println(symbol.left + "  " + symbol.right);
+
 			message = String.format("%d:%d:\nsyntax error (%s)\n",
 					symbol.left + 1, symbol.right, showSymbol(symbol.sym));
 		}

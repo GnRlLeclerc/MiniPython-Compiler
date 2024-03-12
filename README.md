@@ -46,6 +46,8 @@ make debug
 │       │
 │       ├── registers      # Register utilities
 │       │
+│       ├── syntax         # Syntax classes definitions
+│       │
 │       ├── typing         # Typing utilities
 │       │
 │       ├── Main.java      # Main class (CLI program)
@@ -56,7 +58,6 @@ make debug
 │       │
 │       ├── Typing.java    # Type checking entrypoint: File -> TFile
 │       ├── Typer.java     # Type Checking logic: implements Visitor
-│       ├── Syntax.java    # Syntax & TSyntax definitions
 │       │
 │       ├── MyLexer.java   # Java Lexer
 │       ├── sym.java       # Lexer Symbol definitions
@@ -121,6 +122,18 @@ to figure out the behavior of your compiler.
 
 The script does the following:
 
-* call the compiler on a test file
-* compile the generated assembly code with gcc
-* run the executable
+- call the compiler on a test file
+- compile the generated assembly code with gcc
+- run the executable
+
+### Rebuild the Lexer
+
+```bash
+jflex src/mini_python/Lexer.flex
+```
+
+### Rebuild the Parser
+
+```bash
+cd src/mini_python && java -jar ../../lib/java-cup-11a.jar -parser parser -symbols sym Parser.cup && cd ../..
+```

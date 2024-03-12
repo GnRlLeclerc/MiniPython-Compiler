@@ -3,7 +3,18 @@ package mini_python;
 import java.util.LinkedList;
 
 import mini_python.exception_handling.CompilationException;
-import mini_python.exception_handling.Location;
+import mini_python.syntax.Def;
+import mini_python.syntax.File;
+import mini_python.syntax.Function;
+import mini_python.syntax.Ident;
+import mini_python.syntax.Location;
+import mini_python.syntax.TDef;
+import mini_python.syntax.TFile;
+import mini_python.syntax.Variable;
+import mini_python.syntax.constants.Constant;
+import mini_python.syntax.exprs_typed.TEcst;
+import mini_python.syntax.stmts_typed.TSblock;
+import mini_python.syntax.stmts_typed.TSreturn;
 import mini_python.typing.Type;
 
 class Typing {
@@ -50,6 +61,7 @@ class Typing {
 			}
 
 			// Add the function to the list of functions that are valid to be called
+			Typer.defs.put(d.f.id, d);
 			Typer.functions.put(d.f.id, func);
 
 			// Accept this function and parse its return statements

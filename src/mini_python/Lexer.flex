@@ -4,7 +4,14 @@ package mini_python;
 import java_cup.runtime.*;
 import java.util.*;
 import static mini_python.sym.*;
-import mini_python.exception_handling.Location;
+
+import mini_python.syntax.Ident;
+import mini_python.syntax.Location;
+import mini_python.syntax.constants.Cbool;
+import mini_python.syntax.constants.Cint;
+import mini_python.syntax.constants.Constant;
+import mini_python.syntax.constants.Cstring;
+import mini_python.syntax.operations.Binop;
 
 %%
 

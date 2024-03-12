@@ -1,4 +1,4 @@
-package mini_python.exception_handling;
+package mini_python.syntax;
 
 /**
  * Code location in the source file

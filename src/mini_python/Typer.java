@@ -8,7 +8,51 @@ import java.util.LinkedList;
 import java.util.Set;
 
 import mini_python.exception_handling.CompilationException;
-import mini_python.exception_handling.exceptions.UndefinedVariableException;
+import mini_python.exception_handling.exceptions.UndefinedIdentityException;
+import mini_python.exception_handling.exceptions.WrongArgCountException;
+import mini_python.syntax.Def;
+import mini_python.syntax.Function;
+import mini_python.syntax.Variable;
+import mini_python.syntax.constants.Cbool;
+import mini_python.syntax.constants.Cint;
+import mini_python.syntax.constants.Cnone;
+import mini_python.syntax.constants.Cstring;
+import mini_python.syntax.exprs.Ebinop;
+import mini_python.syntax.exprs.Ecall;
+import mini_python.syntax.exprs.Ecst;
+import mini_python.syntax.exprs.Eget;
+import mini_python.syntax.exprs.Eident;
+import mini_python.syntax.exprs.Elist;
+import mini_python.syntax.exprs.Eunop;
+import mini_python.syntax.exprs.Expr;
+import mini_python.syntax.exprs_typed.TEbinop;
+import mini_python.syntax.exprs_typed.TEcall;
+import mini_python.syntax.exprs_typed.TEcst;
+import mini_python.syntax.exprs_typed.TEget;
+import mini_python.syntax.exprs_typed.TEident;
+import mini_python.syntax.exprs_typed.TElist;
+import mini_python.syntax.exprs_typed.TErange;
+import mini_python.syntax.exprs_typed.TEunop;
+import mini_python.syntax.exprs_typed.TExpr;
+import mini_python.syntax.stmts.Sassign;
+import mini_python.syntax.stmts.Sblock;
+import mini_python.syntax.stmts.Seval;
+import mini_python.syntax.stmts.Sfor;
+import mini_python.syntax.stmts.Sif;
+import mini_python.syntax.stmts.Sprint;
+import mini_python.syntax.stmts.Sreturn;
+import mini_python.syntax.stmts.Sset;
+import mini_python.syntax.stmts.Stmt;
+import mini_python.syntax.stmts_typed.TSassign;
+import mini_python.syntax.stmts_typed.TSblock;
+import mini_python.syntax.stmts_typed.TSeval;
+import mini_python.syntax.stmts_typed.TSfor;
+import mini_python.syntax.stmts_typed.TSif;
+import mini_python.syntax.stmts_typed.TSprint;
+import mini_python.syntax.stmts_typed.TSreturn;
+import mini_python.syntax.stmts_typed.TSset;
+import mini_python.syntax.stmts_typed.TStmt;
+import mini_python.syntax.visitors.Visitor;
 import mini_python.typing.Type;
 
 // the following exception is used whenever you have to implement something
@@ -28,7 +72,8 @@ class Todo extends Error {
 /* The typer starts here */
 class Typer implements Visitor {
 
-	static public HashMap<String, Function> functions = new HashMap<>();
+	static public HashMap<String, Def> defs = new HashMap<>(); // For source code parsing on exception
+	static public HashMap<String, Function> functions = new HashMap<>(); // For type checking, compilation, etc
 
 	static {
 		// Create the buitlin list function
@@ -110,7 +155,7 @@ class Typer implements Visitor {
 	public void visit(Eident id) throws CompilationException {
 		Variable v = this.vars.get(id.x.id);
 		if (v == null) {
-			throw new UndefinedVariableException(id.x.id, id.x.loc);
+			throw new UndefinedIdentityException(id.x.id, "variable", id.x.loc);
 		}
 		this.currExpr = new TEident(v);
 	}
@@ -119,11 +164,11 @@ class Typer implements Visitor {
 	public void visit(Ecall e) throws CompilationException {
 		Function f = functions.get(e.f.id);
 		if (f == null) {
-			throw new Error("undefined function: " + e.f.id + " at " + e.f.loc);
+			throw new UndefinedIdentityException(e.f.id, "function", e.f.loc);
 		}
 		if (f.params.size() != e.l.size()) {
-			throw new Error("function " + e.f.id + " expects " + f.params.size() + " arguments, but " + e.l.size()
-					+ " were given at " + e.f.loc);
+			Def sourceDef = defs.get(e.f.id);
+			throw new WrongArgCountException(e.f.loc, sourceDef, e.l.size());
 		}
 		if (f.name.equals("list")) {
 			Expr firstCall = e.l.getFirst();

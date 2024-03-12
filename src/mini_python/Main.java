@@ -1,6 +1,8 @@
 package mini_python;
 
 import mini_python.exception_handling.CompilationExceptionHandler;
+import mini_python.syntax.File;
+import mini_python.syntax.TFile;
 
 public class Main {
 
