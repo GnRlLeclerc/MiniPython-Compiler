@@ -1,3 +1,6 @@
+#ifndef INCLUDE_INT_HELPERS
+#define INCLUDE_INT_HELPERS
+
 /** Get the integer value of a dynamic value that is assumed to be an integer.*/
 static inline long long get_int_value(void *value)
 {
@@ -44,3 +47,5 @@ static inline void *mod_int_helper(void *value1, void *value2, void *result)
     }
     set_int_value(result, get_int_value(value1) % get_int_value(value2));
 }
+
+#endif

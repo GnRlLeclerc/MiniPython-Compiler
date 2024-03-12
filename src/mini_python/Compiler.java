@@ -767,7 +767,7 @@ class Compiler implements TVisitor {
 		// size dynamically.
 		// 1 tag byte + 8 ref count + 8 length + string length + 1 null byte
 		long stringBytes = value.getBytes().length + 1;
-		long byteSize = 1 + 8 + 8 + stringBytes;
+		long byteSize = 1 + 8 + 8 + 8 + 2 * stringBytes + 7;
 
 		x86_64.movq("$" + byteSize, Regs.RDI); // Allocate memory for the dynamic value
 		callLibc("malloc");
@@ -782,9 +782,11 @@ class Compiler implements TVisitor {
 
 		// Initialize the length (remove the null termination byte)
 		x86_64.movq("$" + (stringBytes - 1), "9(%rax)");
+		// Initialize the length (remove the null termination byte)
+		x86_64.movq("$" + (2 * stringBytes + 7), "17(%rax)");
 
 		// Copy the string
-		x86_64.leaq("17(%rax)", Regs.RDI); // %rdi = %rax + 1 + 8 + 8 // Move the destination address to %rdi
+		x86_64.leaq("25(%rax)", Regs.RDI); // %rdi = %rax + 1 + 8 + 8 // Move the destination address to %rdi
 		x86_64.movq("$" + label, Regs.RSI); // Move the source address to %rsi
 		x86_64.movq(Regs.RAX, Regs.R13); // Move the actual address of the string to a callee-saved register
 		callLibc("strcpy"); // Note: this will update the value of rax !

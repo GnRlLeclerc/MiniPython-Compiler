@@ -1,6 +1,10 @@
 #include <string.h>
 #include "alloc_helpers.h"
 #include "type_helpers.h"
+#include "int_helpers.h"
+
+#ifndef INCLUDE_STRING_HELPERS
+#define INCLUDE_STRING_HELPERS
 
 /** Get size of a dynamic value assumed to be a list or a string.*/
 static inline long long get_size(void *value)
@@ -8,17 +12,23 @@ static inline long long get_size(void *value)
     return *((long long *)(value + 1 + 8));
 }
 
-static inline void *add_string_helper(void *value1, void *value2)
+/** Get capacity of a dynamic value assumed to be a string.*/
+static inline long long get_capacity(void *value)
 {
-    // Compute output size
-    long long size = get_size(value1) + get_size(value2);
-    // Since the new string is bigger, we always allocate a new one
-    void *result = allocate_string(size);
+    return *((long long *)(value + 1 + 8 + 8));
+}
 
+static inline char *get_string_value(void *value)
+{
+    return (char *)(value + 1 + 8 + 8 + 8);
+}
+
+static inline void *add_string_helper(void *value1, void *value2, void *result)
+{
     // Copy the first string
-    strcpy((char *)(result + 1 + 8 + 8), (char *)(value1 + 1 + 8 + 8));
+    strcpy(get_string_value(result), get_string_value(value1));
     // Append the second string
-    strcat((char *)(result + 1 + 8 + 8), (char *)(value2 + 1 + 8 + 8));
+    strcat(get_string_value(result), get_string_value(value2));
 
     return result;
 }
@@ -74,17 +84,21 @@ static inline void **list_index(void *list, void *index)
 
 static inline void mul_string_int_helper(void *value1, void *value2, void *result)
 {
-    if (*((long long *)(value2 + 1 + 8)) > 0)
+    long long value2_int = get_int_value(value2);
+    if (value2_int > 0)
     {
-        long long size = *((long long *)(value1 + 1 + 8)) * *((long long *)(value2 + 1 + 8));
+        long long size = get_size(value1) * value2_int;
         result = allocate_string(size);
 
-        // Copy the first string
-        strcpy((char *)(result + 1 + 8 + 8), (char *)(value1 + 1 + 8 + 8));
+        void *value1_string = get_string_value(value1);
+        void *result_string = get_string_value(result);
 
-        for (long long i = 1; i < *((long long *)(value2 + 1 + 8)); i++)
+        // Copy the first string
+        strcpy(result_string, value1_string);
+
+        for (long long i = 1; i < value2_int; i++)
         {
-            strcat((char *)(result + 1 + 8 + 8), (char *)(value1 + 1 + 8 + 8));
+            strcat(result_string, value1_string);
         }
     }
     else
@@ -114,3 +128,5 @@ static inline void mul_list_int_helper(void *value1, void *value2, void *result)
         result = allocate_list(0);
     }
 }
+
+#endif

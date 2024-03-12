@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "string_list_helpers.h"
 
 // Forward declaration to allow println_list to call println_dynamic
 void print_dynamic(void *);
@@ -111,7 +112,7 @@ inline void print_dynamic(void *value)
         print_int64(*((long long *)(value + 1 + 8))); // Offset type + ref_count
         break;
     case 3:
-        print_string((char *)(value + 1 + 8 + 8)); // Offset type + ref_count + string length
+        print_string(get_string_value(value)); // Offset type + ref_count + string length
         break;
     case 4:
         print_list(value);

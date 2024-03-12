@@ -35,3 +35,4 @@ debug:
 	# Compile our code in debug mode
 	gcc -g -c test.s -o bin/test.o
 	gcc -g -no-pie -o test bin/test.o -L./bin/libc_extended -llibc_extended
+

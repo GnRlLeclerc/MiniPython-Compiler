@@ -27,12 +27,14 @@ static inline void *allocate_int64()
 /** Allocate an empty string value with a given size */
 static inline void *allocate_string(long long size)
 {
-    void *value = malloc(1 + 8 + 8 + size + 1); // 1 byte tag, 8 bytes ref_count, 8 bytes size, size bytes string
+    long long capacity = size * 2 + 7;
+    void *value = malloc(1 + 8 + 8 + 8 + capacity + 1); // 1 byte tag, 8 bytes ref_count, 8 bytes size, 8 bytes capacity, size bytes string
     *((char *)value) = STRING;                  // Set the tag
     *((long long *)(value + 1)) = 0;            // ref_count (0 by default for a temporary value)
     *((long long *)(value + 1 + 8)) = size;     // string size
+    *((long long *)(value + 1 + 8 + 8)) = capacity;     // string size
     // null terminate the string
-    *((char *)(value + 1 + 8 + 8 + size)) = '\0';
+    *((char *)(value + 1 + 8 + 8 + 8 + size)) = '\0';
     return value;
 }
 

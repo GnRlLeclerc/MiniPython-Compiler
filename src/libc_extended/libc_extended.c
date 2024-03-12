@@ -57,7 +57,7 @@ static inline int is_equal(void *value1, void *value2)
         return *((long long *)(value1 + 1 + 8)) == *((long long *)(value2 + 1 + 8));
     case STRING_STRING:
     {
-        return strcmp((char *)(value1 + 1 + 8 + 8), (char *)(value2 + 1 + 8 + 8)) == 0;
+        return strcmp(get_string_value(value1), get_string_value(value2)) == 0;
     }
     case LIST_LIST:
     {
@@ -112,7 +112,7 @@ static inline int is_lt(void *value1, void *value2)
         return *((long long *)(value1 + 1 + 8)) < *((long long *)(value2 + 1 + 8));
 
     case STRING_STRING:
-        return strcmp((char *)(value1 + 1 + 8 + 8), (char *)(value2 + 1 + 8 + 8)) < 0;
+        return strcmp(get_string_value(value1), get_string_value(value2)) < 0;
 
     case LIST_LIST:
     {
@@ -203,7 +203,11 @@ void *add_dynamic(void *value1, void *value2)
 
     case STRING_STRING:
     {
-        result = add_string_helper(value1, value2);
+        // Compute output size
+        long long size = get_size(value1) + get_size(value2);
+        // Since the new string is bigger, we always allocate a new one
+        result = allocate_string(size);
+        add_string_helper(value1, value2, result);
         break;
     }
     case LIST_LIST:
@@ -241,7 +245,11 @@ void *add_dynamic_temp_1(void *value1, void *value2)
 
     case STRING_STRING:
     {
-        result = add_string_helper(value1, value2);
+        // Compute output size
+        long long size = get_size(value1) + get_size(value2);
+        // Since the new string is bigger, we always allocate a new one
+        result = allocate_string(size);
+        add_string_helper(value1, value2, result);
         free(value1);
         return result;
     }
@@ -279,7 +287,11 @@ void *add_dynamic_temp_2(void *value1, void *value2)
 
     case STRING_STRING:
     {
-        result = add_string_helper(value1, value2);
+        // Compute output size
+        long long size = get_size(value1) + get_size(value2);
+        // Since the new string is bigger, we always allocate a new one
+        result = allocate_string(size);
+        add_string_helper(value1, value2, result);
         free(value2);
         return result;
     }
@@ -317,9 +329,34 @@ void *add_dynamic_temp_3(void *value1, void *value2)
 
     case STRING_STRING:
     {
-        result = add_string_helper(value1, value2);
-        free(value1);
-        free(value2);
+        // Compute output size
+        long long size = get_size(value1) + get_size(value2);
+        long long capacity1 = get_capacity(value1);
+        long long capacity2 = get_capacity(value2);
+        int to_free = 3;
+        if (capacity1 >= size) {
+            result = value1;
+            to_free = 2;
+        } else if (capacity2 >= size) {
+            result = value2;
+            to_free = 1;
+        } else {
+            result = allocate_string(size);
+        }
+        *((long long *)(result + 1 + 8)) = size; 
+        add_string_helper(value1, value2, result);
+        switch (to_free) {
+            case 1:
+                free(value1);
+                break;
+            case 2:
+                free(value2);
+                break;
+            case 3:
+                free(value1);
+                free(value2);
+                break;
+        }
         return result;
     }
     case LIST_LIST:
