@@ -129,14 +129,14 @@ class Typer implements Visitor {
 		TExpr e1 = this.currExpr;
 		e.e2.accept(this);
 		TExpr e2 = this.currExpr;
-		this.currExpr = new TEbinop(e.op, e1, e2);
+		this.currExpr = new TEbinop(e.op, e1, e2, e.getSpan());
 	}
 
 	@Override
 	public void visit(Eunop e) throws CompilationException {
 		e.e.accept(this);
 		TExpr e1 = this.currExpr;
-		this.currExpr = new TEunop(e.op, e1);
+		this.currExpr = new TEunop(e.op, e1, e.getSpan());
 	}
 
 	@Override

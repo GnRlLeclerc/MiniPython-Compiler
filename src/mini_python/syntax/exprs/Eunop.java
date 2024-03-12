@@ -24,7 +24,7 @@ public class Eunop extends Expr {
     }
 
     @Override
-    public Span getSpan() {
+    public Span buildSpan() {
         return e.getSpan(); // Returning the main expression span is enough
     }
 

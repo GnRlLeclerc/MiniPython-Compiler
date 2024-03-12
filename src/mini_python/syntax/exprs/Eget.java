@@ -23,7 +23,7 @@ public class Eget extends Expr {
     }
 
     @Override
-    public Span getSpan() {
+    public Span buildSpan() {
         return this.e1.getSpan(); // Just return the list identity
     }
 }

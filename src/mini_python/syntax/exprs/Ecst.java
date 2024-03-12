@@ -21,7 +21,7 @@ public class Ecst extends Expr {
     }
 
     @Override
-    public Span getSpan() {
+    public Span buildSpan() {
         return new Span(this.c.location, this.c.length());
     }
 }

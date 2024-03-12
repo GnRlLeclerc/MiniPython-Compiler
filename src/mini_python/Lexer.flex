@@ -11,6 +11,7 @@ import mini_python.syntax.constants.Cbool;
 import mini_python.syntax.constants.Cint;
 import mini_python.syntax.constants.Constant;
 import mini_python.syntax.constants.Cstring;
+import mini_python.syntax.constants.Cnone;
 import mini_python.syntax.operations.Binop;
 
 %%

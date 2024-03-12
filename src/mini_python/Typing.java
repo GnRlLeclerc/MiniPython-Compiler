@@ -11,7 +11,7 @@ import mini_python.syntax.Location;
 import mini_python.syntax.TDef;
 import mini_python.syntax.TFile;
 import mini_python.syntax.Variable;
-import mini_python.syntax.constants.Constant;
+import mini_python.syntax.constants.Cnone;
 import mini_python.syntax.exprs_typed.TEcst;
 import mini_python.syntax.stmts_typed.TSblock;
 import mini_python.syntax.stmts_typed.TSreturn;
@@ -80,7 +80,7 @@ class Typing {
 			// If there is no return statement, add a default return None statement
 			TSblock block = (TSblock) typer.currStmt;
 			if (typer.returns.isEmpty()) {
-				block.l.add(new TSreturn(new TEcst(Constant.None)));
+				block.l.add(new TSreturn(new TEcst(new Cnone(null))));
 			}
 
 			TDef tdef = new TDef(func, block);

@@ -3,7 +3,7 @@ package mini_python.exception_handling.exceptions;
 
 import mini_python.exception_handling.CompilationException;
 import mini_python.exception_handling.Tuple;
-import mini_python.syntax.Location;
+import mini_python.syntax.Span;
 import mini_python.syntax.operations.Unop;
 import mini_python.typing.Type;
 
@@ -11,14 +11,14 @@ public class InvalidUnopTypeException extends CompilationException {
 
     protected Unop op;
     protected Type type;
+    protected Span span;
 
-    public InvalidUnopTypeException(Location location, Unop op, Type type) {
-        super(location);
+    public InvalidUnopTypeException(Span span, Unop op, Type type) {
+        super(span.start);
 
         this.op = op;
         this.type = type;
-        // TODO: list the expected types for the operation (for unops this is simple
-        // enough)
+        this.span = span;
     }
 
     @Override
@@ -28,13 +28,11 @@ public class InvalidUnopTypeException extends CompilationException {
 
     @Override
     public String getErrorHelper() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getErrorHelper'");
+        return "TODO";
     }
 
     @Override
     public Tuple<Integer, Integer> getIndicatorSpan() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getIndicatorSpan'");
+        return new Tuple<Integer, Integer>(location.column, location.column + op.toString().length());
     }
 }

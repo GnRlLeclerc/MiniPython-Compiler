@@ -6,6 +6,8 @@ import mini_python.syntax.visitors.Visitor;
 
 public abstract class Expr {
 
+    private Span span = null;
+
     abstract public void accept(Visitor v) throws CompilationException;
 
     /**
@@ -14,5 +16,16 @@ public abstract class Expr {
      * source
      * code error messages.
      */
-    abstract public Span getSpan();
+    abstract protected Span buildSpan();
+
+    /**
+     * Use this method to interact with a cached span value in order to avoid
+     * going through the whole syntax tree every time.
+     */
+    public Span getSpan() {
+        if (span == null) {
+            span = buildSpan();
+        }
+        return span;
+    };
 }

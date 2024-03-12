@@ -4,6 +4,7 @@ import java.util.LinkedList;
 
 import mini_python.exception_handling.CompilationException;
 import mini_python.syntax.Ident;
+import mini_python.syntax.Span;
 import mini_python.syntax.visitors.Visitor;
 
 /**
@@ -22,5 +23,10 @@ public class Ecall extends Expr {
     @Override
     public void accept(Visitor v) throws CompilationException {
         v.visit(this);
+    }
+
+    @Override
+    protected Span buildSpan() {
+        return new Span(this.f.loc, this.f.id.length());
     }
 }

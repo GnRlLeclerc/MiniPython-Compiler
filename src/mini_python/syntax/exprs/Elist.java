@@ -24,7 +24,7 @@ public class Elist extends Expr {
     }
 
     @Override
-    public Span getSpan() {
+    public Span buildSpan() {
         throw new Todo("Elist.getSpan");
     }
 }

@@ -22,7 +22,7 @@ public class Eident extends Expr {
     }
 
     @Override
-    public Span getSpan() {
+    public Span buildSpan() {
         return new Span(this.x.loc, this.x.id.length());
     }
 }
