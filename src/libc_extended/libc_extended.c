@@ -691,9 +691,20 @@ void *mul_dynamic_temp_1(void *value1, void *value2)
         void *result = NULL;
         long long value2_int = get_int_value(value2);
         long long size = get_size(value1) * value2_int;
-        result = allocate_string(size);
-        mul_string_int_helper(value1, value2, result);
-        free(value1);
+        if (get_capacity(value1) >= size)
+        {
+            result = value1;
+            // Technically one copy too much
+            mul_string_int_helper(value1, value2, result);
+            *((long long *)(result + 1 + 8)) = size;
+        }
+        else
+        {
+            result = allocate_string(size);
+            mul_string_int_helper(value1, value2, result);
+            free(value1);
+        }
+        free(value2);
         return result;
     }
     case INT64_STRING:
@@ -701,8 +712,19 @@ void *mul_dynamic_temp_1(void *value1, void *value2)
         void *result = NULL;
         long long value1_int = get_int_value(value1);
         long long size = get_size(value2) * value1_int;
-        result = allocate_string(size);
-        mul_string_int_helper(value2, value1, result);
+        if (get_capacity(value2) >= size)
+        {
+            result = value2;
+            // Technically one copy too much
+            mul_string_int_helper(value2, value1, result);
+            *((long long *)(result + 1 + 8)) = size;
+        }
+        else
+        {
+            result = allocate_string(size);
+            mul_string_int_helper(value2, value1, result);
+            free(value2);
+        }
         free(value1);
         return result;
     }
@@ -803,9 +825,19 @@ void *mul_dynamic_temp_3(void *value1, void *value2)
         void *result = NULL;
         long long value2_int = get_int_value(value2);
         long long size = get_size(value1) * value2_int;
-        result = allocate_string(size);
-        mul_string_int_helper(value1, value2, result);
-        free(value1);
+        if (get_capacity(value1) >= size)
+        {
+            result = value1;
+            // Technically one copy too much
+            mul_string_int_helper(value1, value2, result);
+            *((long long *)(result + 1 + 8)) = size;
+        }
+        else
+        {
+            result = allocate_string(size);
+            mul_string_int_helper(value1, value2, result);
+            free(value1);
+        }
         free(value2);
         return result;
     }
@@ -814,10 +846,20 @@ void *mul_dynamic_temp_3(void *value1, void *value2)
         void *result = NULL;
         long long value1_int = get_int_value(value1);
         long long size = get_size(value2) * value1_int;
-        result = allocate_string(size);
-        mul_string_int_helper(value2, value1, result);
+        if (get_capacity(value2) >= size)
+        {
+            result = value2;
+            // Technically one copy too much
+            mul_string_int_helper(value2, value1, result);
+            *((long long *)(result + 1 + 8)) = size;
+        }
+        else
+        {
+            result = allocate_string(size);
+            mul_string_int_helper(value2, value1, result);
+            free(value2);
+        }
         free(value1);
-        free(value2);
         return result;
     }
     case LIST_INT64:
