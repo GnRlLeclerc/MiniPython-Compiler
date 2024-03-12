@@ -25,6 +25,7 @@ public class CompilationExceptionHandler {
         String strLine = String.valueOf(ce.location.line);
         int leftOffset = 1 + strLine.length();
 
+        // Print error header
         System.out
                 .println(String.format("  %s Compiling %s v0.1.0 (%s)", Color.BOLD_GREEN,
                         Color.RESET + filepath.getFileName().toString(),
@@ -34,6 +35,12 @@ public class CompilationExceptionHandler {
 
         System.out.println(String.format("  %s--> %s:%s:%s", Color.BOLD_BLUE, Color.RESET + filepath.toString(),
                 ce.location.line, ce.location.column));
+
+        // Print source code snippet
+        System.out.println(String.format("%s%s| ", " ".repeat(leftOffset), Color.BOLD_BLUE));
+        String code = LOCExtractor.extractLine(filepath, ce.location.line);
+        System.out.println(String.format("%s | %s%s", ce.location.line, Color.RESET, code));
+
         System.exit(1);
     }
 }
