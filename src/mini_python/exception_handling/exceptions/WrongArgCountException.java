@@ -39,10 +39,10 @@ public class WrongArgCountException extends CompilationException {
         int expected = definition.l.size();
         int given = call.l.size();
         int delta = Math.abs(given - expected);
+        int fend = call.f.loc.column + call.f.id.length();
 
         if (given < expected) {
             // Missing arguments
-            int fend = call.f.loc.column + call.f.id.length();
             int start = fend;
             int end = start + 2;
             if (given != 0) {
@@ -62,7 +62,25 @@ public class WrongArgCountException extends CompilationException {
 
         } else {
             // Extra arguments
-            return String.format("unexpected argument%s", given - definition.l.size() == 1 ? "" : 's');
+            int start;
+            if (expected == 0)
+                start = call.l.get(expected).getSpan().start.column;
+            else {
+                Span previous = call.l.get(expected - 1).getSpan();
+                start = previous.start.column + previous.length;
+            }
+
+            Expr last = call.l.getLast();
+            int end = last.getSpan().start.column + last.getSpan().length;
+
+            return new StringBuilder()
+                    .append(Color.BOLD_BLUE)
+                    .append(" ".repeat(start - fend))
+                    .append("^".repeat(end - start))
+                    .append(" ")
+                    .append(delta)
+                    .append(delta == 1 ? " extra argument" : " extra arguments")
+                    .toString();
         }
     }
 
