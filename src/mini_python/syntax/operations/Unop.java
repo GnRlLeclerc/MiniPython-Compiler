@@ -19,6 +19,7 @@ public enum Unop {
                 if (type == Type.INT64 || type == Type.BOOL) {
                     return Type.INT64;
                 }
+                break;
             case Unot:
                 return Type.BOOL; // All types can be coerced to bool
         }

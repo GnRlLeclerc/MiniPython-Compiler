@@ -11,4 +11,10 @@ public abstract class CompilationException extends Exception {
     }
 
     public abstract String getMessage();
+
+    /** Error message displayed right under the erroneous code */
+    public abstract String getErrorHelper();
+
+    /** Start and end columns for the erroneous code line */
+    public abstract Tuple<Integer, Integer> getIndicatorSpan();
 }

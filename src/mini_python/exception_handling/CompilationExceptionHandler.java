@@ -37,9 +37,19 @@ public class CompilationExceptionHandler {
                 ce.location.line, ce.location.column));
 
         // Print source code snippet
-        System.out.println(String.format("%s%s| ", " ".repeat(leftOffset), Color.BOLD_BLUE));
+        String genericPrefix = String.format("%s%s| ", " ".repeat(leftOffset), Color.BOLD_BLUE);
+        System.out.println(genericPrefix);
         String code = LOCExtractor.extractLine(filepath, ce.location.line);
         System.out.println(String.format("%s | %s%s", ce.location.line, Color.RESET, code));
+
+        // Print error message with indications
+        Tuple<Integer, Integer> span = ce.getIndicatorSpan();
+        System.out
+                .println(
+                        new StringBuilder().append(genericPrefix).append(Color.BOLD_RED)
+                                .append(" ".repeat(span.x)).append("^".repeat(span.y - span.x)).append(" ")
+                                .append(ce.getErrorHelper()).append(Color.RESET)
+                                .toString());
 
         System.exit(1);
     }
