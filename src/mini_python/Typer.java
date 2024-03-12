@@ -8,6 +8,7 @@ import java.util.LinkedList;
 import java.util.Set;
 
 import mini_python.exception_handling.CompilationException;
+import mini_python.exception_handling.exceptions.RangeExpectedException;
 import mini_python.exception_handling.exceptions.UndefinedIdentityException;
 import mini_python.exception_handling.exceptions.WrongArgCountException;
 import mini_python.syntax.Def;
@@ -173,7 +174,7 @@ class Typer implements Visitor {
 		if (f.name.equals("list")) {
 			Expr firstCall = e.l.getFirst();
 			if (!(firstCall instanceof Ecall) || !((Ecall) firstCall).f.id.equals("range")) {
-				throw new Error("list expects a range call at " + e.f.loc);
+				throw new RangeExpectedException(e.f.loc);
 			}
 		}
 		if (f.name.equals("range")) {
