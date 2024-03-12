@@ -3,7 +3,13 @@ package mini_python.syntax.operations;
 import mini_python.typing.Type;
 
 public enum Unop {
-    Uneg, Unot;
+    Uneg("negation"), Unot("not");
+
+    public final String opName;
+
+    Unop(String opName) {
+        this.opName = opName;
+    }
 
     /**
      * Given a type, build the resulting type of the operation.

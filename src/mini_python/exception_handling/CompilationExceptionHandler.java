@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import mini_python.exception_handling.terminal.Color;
+import mini_python.syntax.Span;
 
 public class CompilationExceptionHandler {
 
@@ -43,11 +44,12 @@ public class CompilationExceptionHandler {
         System.out.println(String.format("%s | %s%s", ce.location.line, Color.RESET, code));
 
         // Print error message with indications
-        Tuple<Integer, Integer> span = ce.getIndicatorSpan();
+        Span span = ce.getIndicatorSpan();
         System.out
                 .println(
                         new StringBuilder().append(genericPrefix).append(Color.BOLD_RED)
-                                .append(" ".repeat(span.x)).append("^".repeat(span.y - span.x)).append(" ")
+                                .append(" ".repeat(span.start.column))
+                                .append("^".repeat(span.length - span.start.column)).append(" ")
                                 .append(ce.getErrorHelper()).append(Color.RESET)
                                 .toString());
 

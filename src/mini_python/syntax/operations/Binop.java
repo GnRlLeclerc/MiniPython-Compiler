@@ -3,9 +3,15 @@ package mini_python.syntax.operations;
 import mini_python.typing.Type;
 
 public enum Binop {
-    Badd, Bsub, Bmul, Bdiv, Bmod,
-    Beq, Bneq, Blt, Ble, Bgt, Bge,
-    Band, Bor;
+    Badd("addition"), Bsub("subtraction"), Bmul("multiplication"), Bdiv("division"), Bmod("modulo"),
+    Beq("equality"), Bneq("difference"), Blt("comparison"), Ble("comparison"), Bgt("comparison"), Bge("comparison"),
+    Band("intersection"), Bor("union");
+
+    public final String opName;
+
+    Binop(String opName) {
+        this.opName = opName;
+    }
 
     /**
      * Given two operand types, return the output type

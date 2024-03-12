@@ -2,9 +2,9 @@
 package mini_python.exception_handling.exceptions;
 
 import mini_python.exception_handling.CompilationException;
-import mini_python.exception_handling.Tuple;
 import mini_python.syntax.Def;
 import mini_python.syntax.Location;
+import mini_python.syntax.Span;
 
 public class WrongArgCountException extends CompilationException {
 
@@ -38,7 +38,7 @@ public class WrongArgCountException extends CompilationException {
     }
 
     @Override
-    public Tuple<Integer, Integer> getIndicatorSpan() {
-        return new Tuple<Integer, Integer>(location.column, location.column + definition.f.id.length());
+    public Span getIndicatorSpan() {
+        return new Span(location, definition.f.id.length());
     }
 }

@@ -32,6 +32,6 @@ public class Cstring extends Constant {
 
     @Override
     public int length() {
-        return this.s.length() + 2; // Add 2 for the quotes
+        return this.s.length() + 3; // Add 2 for the quotes + 1 because the end is not included
     }
 }

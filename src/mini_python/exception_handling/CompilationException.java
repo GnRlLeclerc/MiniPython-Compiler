@@ -1,6 +1,7 @@
 package mini_python.exception_handling;
 
 import mini_python.syntax.Location;
+import mini_python.syntax.Span;
 
 /** The base compilation exception class */
 public abstract class CompilationException extends Exception {
@@ -16,5 +17,5 @@ public abstract class CompilationException extends Exception {
     public abstract String getErrorHelper();
 
     /** Start and end columns for the erroneous code line */
-    public abstract Tuple<Integer, Integer> getIndicatorSpan();
+    public abstract Span getIndicatorSpan();
 }

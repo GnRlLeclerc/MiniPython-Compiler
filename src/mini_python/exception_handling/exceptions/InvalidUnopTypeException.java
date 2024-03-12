@@ -2,7 +2,6 @@
 package mini_python.exception_handling.exceptions;
 
 import mini_python.exception_handling.CompilationException;
-import mini_python.exception_handling.Tuple;
 import mini_python.syntax.Span;
 import mini_python.syntax.operations.Unop;
 import mini_python.typing.Type;
@@ -23,16 +22,16 @@ public class InvalidUnopTypeException extends CompilationException {
 
     @Override
     public String getMessage() {
-        return String.format("Invalid type %s for operand %s", type, op);
+        return String.format("Invalid type %s for %s operator", type, op.opName);
     }
 
     @Override
     public String getErrorHelper() {
-        return "TODO";
+        return String.format("%s with type %s here", op.opName, type);
     }
 
     @Override
-    public Tuple<Integer, Integer> getIndicatorSpan() {
-        return new Tuple<Integer, Integer>(location.column, location.column + op.toString().length());
+    public Span getIndicatorSpan() {
+        return span;
     }
 }

@@ -1,8 +1,8 @@
 package mini_python.exception_handling.exceptions;
 
 import mini_python.exception_handling.CompilationException;
-import mini_python.exception_handling.Tuple;
 import mini_python.syntax.Location;
+import mini_python.syntax.Span;
 
 public class UndefinedIdentityException extends CompilationException {
 
@@ -26,7 +26,7 @@ public class UndefinedIdentityException extends CompilationException {
     }
 
     @Override
-    public Tuple<Integer, Integer> getIndicatorSpan() {
-        return new Tuple<Integer, Integer>(location.column, location.column + name.length());
+    public Span getIndicatorSpan() {
+        return new Span(location, name.length());
     }
 }
