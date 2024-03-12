@@ -26,7 +26,8 @@ public class Ebinop extends Expr {
 
     @Override
     public Span buildSpan() {
+        Span first = e1.getSpan();
         Span second = e2.getSpan();
-        return new Span(e1.getSpan().start, second.start.column + second.length);
+        return new Span(first.start, second.start.column - first.start.column + second.length);
     }
 }

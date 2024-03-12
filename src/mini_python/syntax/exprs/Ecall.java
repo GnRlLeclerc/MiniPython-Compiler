@@ -27,6 +27,15 @@ public class Ecall extends Expr {
 
     @Override
     protected Span buildSpan() {
-        return new Span(this.f.loc, this.f.id.length());
+        int start = this.f.loc.column;
+        int length = this.f.loc.column + this.f.id.length() + 2; // By default, if no args, try to include naively the 2
+                                                                 // parens.
+
+        if (!l.isEmpty()) {
+            Span last = l.getLast().getSpan();
+            length = last.length - start + 1;
+        }
+
+        return new Span(this.f.loc, length);
     }
 }
