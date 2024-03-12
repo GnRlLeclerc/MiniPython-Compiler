@@ -1,5 +1,11 @@
 
-all: java release
+all: lexer parser java release
+
+parser:
+	cd src/mini_python && java -jar ../../lib/java-cup-11a.jar -parser parser -symbols sym Parser.cup && cd ../..
+
+lexer:
+	jflex src/mini_python/Lexer.flex
 
 java:
 	mkdir -p bin

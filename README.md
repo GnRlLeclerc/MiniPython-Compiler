@@ -129,11 +129,11 @@ The script does the following:
 ### Rebuild the Lexer
 
 ```bash
-jflex src/mini_python/Lexer.flex
+make lexer
 ```
 
 ### Rebuild the Parser
 
 ```bash
-cd src/mini_python && java -jar ../../lib/java-cup-11a.jar -parser parser -symbols sym Parser.cup && cd ../..
+make parser
 ```

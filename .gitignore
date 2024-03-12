@@ -10,3 +10,7 @@ out/
 out
 *.s
 test
+Lexer.java
+Lexer.java~
+parser.java
+sym.java
