@@ -20,6 +20,14 @@ public class WrongArgCountException extends CompilationException {
 
     @Override
     public String getMessage() {
-        return "Undefined "; // TODO: show the args, show the source code, etc...
+        int expected = definition.l.size();
+
+        if (given == 1) {
+            return String.format("this function takes %s argument%s but 1 argument was supplied", expected,
+                    expected == 1 ? "" : 's');
+        } else {
+            return String.format("this function takes %s argument%s but %s arguments were supplied", expected,
+                    expected == 1 ? "" : 's', given);
+        }
     }
 }

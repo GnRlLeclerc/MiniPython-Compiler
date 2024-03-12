@@ -15,6 +15,6 @@ public class RangeExpectedException extends CompilationException {
 
     @Override
     public String getMessage() {
-        return "list expects a range call at " + location;
+        return "`list` function expects a `range()` function call as argument";
     }
 }

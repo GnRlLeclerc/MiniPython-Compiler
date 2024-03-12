@@ -16,6 +16,6 @@ public class UndefinedIdentityException extends CompilationException {
 
     @Override
     public String getMessage() {
-        return "Undefined " + identity + " " + name + " at " + location;
+        return String.format("cannot find %s `%s` in this scope", name, identity);
     }
 }

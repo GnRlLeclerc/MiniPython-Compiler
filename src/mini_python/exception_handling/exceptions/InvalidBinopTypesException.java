@@ -22,6 +22,6 @@ public class InvalidBinopTypesException extends CompilationException {
 
     @Override
     public String getMessage() {
-        return "Invalid types " + type1 + " and " + type2 + " for operation " + op + " at " + location;
+        return String.format("Invalid types %s and %s for operand %s", type1, type2, op);
     }
 }

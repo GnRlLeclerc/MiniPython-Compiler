@@ -4,8 +4,8 @@ package mini_python.syntax;
  * Code location in the source file
  */
 public class Location {
-	final int line;
-	final int column;
+	public final int line;
+	public final int column;
 
 	public Location(int line, int column) {
 		this.line = line + 1;

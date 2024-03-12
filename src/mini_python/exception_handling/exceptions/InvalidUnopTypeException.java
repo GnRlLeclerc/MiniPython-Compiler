@@ -22,6 +22,6 @@ public class InvalidUnopTypeException extends CompilationException {
 
     @Override
     public String getMessage() {
-        return "Invalid type " + type + " for operand " + op + " at " + location;
+        return String.format("Invalid type %s for operand %s", type, op);
     }
 }

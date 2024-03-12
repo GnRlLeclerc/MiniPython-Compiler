@@ -156,7 +156,7 @@ class Typer implements Visitor {
 	public void visit(Eident id) throws CompilationException {
 		Variable v = this.vars.get(id.x.id);
 		if (v == null) {
-			throw new UndefinedIdentityException(id.x.id, "variable", id.x.loc);
+			throw new UndefinedIdentityException(id.x.id, "value", id.x.loc);
 		}
 		this.currExpr = new TEident(v);
 	}
