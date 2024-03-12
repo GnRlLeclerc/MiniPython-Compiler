@@ -22,7 +22,7 @@ public class UndefinedIdentityException extends CompilationException {
 
     @Override
     public String getErrorHelper() {
-        return String.format("`%s` is undefined", name);
+        return String.format(" `%s` is undefined", name);
     }
 
     @Override

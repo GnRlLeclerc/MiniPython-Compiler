@@ -20,7 +20,7 @@ public class RangeExpectedException extends CompilationException {
 
     @Override
     public String getErrorHelper() {
-        return "`list` function called here";
+        return " `list` function called here";
     }
 
     @Override

@@ -27,7 +27,7 @@ public class InvalidUnopTypeException extends CompilationException {
 
     @Override
     public String getErrorHelper() {
-        return String.format("%s with type %s here", op.opName, type);
+        return String.format(" %s with type %s here", op.opName, type);
     }
 
     @Override

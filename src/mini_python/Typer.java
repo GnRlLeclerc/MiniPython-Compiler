@@ -156,7 +156,7 @@ class Typer implements Visitor {
 		}
 		if (f.params.size() != e.l.size()) {
 			Def sourceDef = defs.get(e.f.id);
-			throw new WrongArgCountException(e.f.loc, sourceDef, e.l.size());
+			throw new WrongArgCountException(sourceDef, e);
 		}
 		if (f.name.equals("list")) {
 			Expr firstCall = e.l.getFirst();

@@ -2,33 +2,28 @@
 package mini_python.exception_handling.exceptions;
 
 import mini_python.exception_handling.CompilationException;
+import mini_python.exception_handling.terminal.Color;
 import mini_python.syntax.Def;
-import mini_python.syntax.Location;
 import mini_python.syntax.Span;
+import mini_python.syntax.exprs.Ecall;
+import mini_python.syntax.exprs.Expr;
 
 public class WrongArgCountException extends CompilationException {
 
     public final Def definition;
-    public final int given;
+    public final Ecall call;
 
-    public WrongArgCountException(Location callLocation, Def definition, int given) {
-        super(callLocation);
+    public WrongArgCountException(Def definition, Ecall call) {
+        super(call.f.loc);
 
         this.definition = definition;
-        this.given = given;
-
-        // Problème : on n'a pas les expr d'input ? On pourrait calculer un span de
-        // chacun
-        // NOTE: pour les trucs
-
-        // 1. Pour le "function defined here" avec underlining des paramètres, ça on
-        // peut faire facilement
-        // déjà, faire ça. On verra le reste après.
+        this.call = call;
     }
 
     @Override
     public String getMessage() {
         int expected = definition.l.size();
+        int given = call.l.size();
 
         if (given == 1) {
             return String.format("this function takes %s argument%s but 1 argument was supplied", expected,
@@ -41,7 +36,34 @@ public class WrongArgCountException extends CompilationException {
 
     @Override
     public String getErrorHelper() {
-        return String.format("`%s` function called here", definition.f.id);
+        int expected = definition.l.size();
+        int given = call.l.size();
+        int delta = Math.abs(given - expected);
+
+        if (given < expected) {
+            // Missing arguments
+            int fend = call.f.loc.column + call.f.id.length();
+            int start = fend;
+            int end = start + 2;
+            if (given != 0) {
+                start = call.l.getFirst().getSpan().start.column - 1;
+                Expr last = call.l.getLast();
+                end = last.getSpan().start.column + last.getSpan().length + 1;
+            }
+
+            return new StringBuilder()
+                    .append(Color.BOLD_BLUE)
+                    .append(" ".repeat(start - fend))
+                    .append("-".repeat(end - start))
+                    .append(" ")
+                    .append(delta)
+                    .append(delta == 1 ? " argument is missing" : " arguments are missing")
+                    .toString();
+
+        } else {
+            // Extra arguments
+            return String.format("unexpected argument%s", given - definition.l.size() == 1 ? "" : 's');
+        }
     }
 
     @Override

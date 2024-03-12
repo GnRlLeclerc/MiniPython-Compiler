@@ -29,7 +29,7 @@ public class InvalidBinopTypesException extends CompilationException {
 
     @Override
     public String getErrorHelper() {
-        return String.format("%s between types %s and %s here", op.opName, type1, type2);
+        return String.format(" %s between types %s and %s here", op.opName, type1, type2);
     }
 
     @Override

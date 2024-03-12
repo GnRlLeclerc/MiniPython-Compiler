@@ -52,7 +52,7 @@ public class CompilationExceptionHandler {
                 .println(
                         new StringBuilder().append(genericPrefix).append(Color.BOLD_RED)
                                 .append(" ".repeat(span.start.column))
-                                .append("^".repeat(span.length - span.start.column)).append(" ")
+                                .append("^".repeat(span.length - span.start.column))
                                 .append(ce.getErrorHelper()).append(Color.RESET)
                                 .toString());
 
