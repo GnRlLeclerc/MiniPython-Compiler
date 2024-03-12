@@ -8,15 +8,22 @@ import mini_python.syntax.Span;
 
 public class WrongArgCountException extends CompilationException {
 
-    protected Location definitionLocation;
-    protected Def definition;
-    protected int given;
+    public final Def definition;
+    public final int given;
 
     public WrongArgCountException(Location callLocation, Def definition, int given) {
         super(callLocation);
 
         this.definition = definition;
         this.given = given;
+
+        // Problème : on n'a pas les expr d'input ? On pourrait calculer un span de
+        // chacun
+        // NOTE: pour les trucs
+
+        // 1. Pour le "function defined here" avec underlining des paramètres, ça on
+        // peut faire facilement
+        // déjà, faire ça. On verra le reste après.
     }
 
     @Override
