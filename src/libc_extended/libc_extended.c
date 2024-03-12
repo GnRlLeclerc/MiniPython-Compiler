@@ -247,10 +247,20 @@ void *add_dynamic_temp_1(void *value1, void *value2)
     {
         // Compute output size
         long long size = get_size(value1) + get_size(value2);
-        // Since the new string is bigger, we always allocate a new one
-        result = allocate_string(size);
-        add_string_helper(value1, value2, result);
-        free(value1);
+        long long capacity1 = get_capacity(value1);
+        if (capacity1 >= size)
+        {
+            result = value1;
+            strcat(get_string_value(result), get_string_value(value2));
+            *((long long *)(result + 1 + 8)) = size;
+        }
+        else
+        {
+            result = allocate_string(size);
+            add_string_helper(value1, value2, result);
+            free(value1);
+            free(value2);
+        }
         return result;
     }
     case LIST_LIST:
@@ -287,6 +297,8 @@ void *add_dynamic_temp_2(void *value1, void *value2)
 
     case STRING_STRING:
     {
+        // We don't do anything different as the second string being temporary doesn't
+        // really help
         // Compute output size
         long long size = get_size(value1) + get_size(value2);
         // Since the new string is bigger, we always allocate a new one
@@ -332,30 +344,18 @@ void *add_dynamic_temp_3(void *value1, void *value2)
         // Compute output size
         long long size = get_size(value1) + get_size(value2);
         long long capacity1 = get_capacity(value1);
-        long long capacity2 = get_capacity(value2);
-        int to_free = 3;
-        if (capacity1 >= size) {
+        if (capacity1 >= size)
+        {
             result = value1;
-            to_free = 2;
-        } else if (capacity2 >= size) {
-            result = value2;
-            to_free = 1;
-        } else {
-            result = allocate_string(size);
+            strcat(get_string_value(result), get_string_value(value2));
+            *((long long *)(result + 1 + 8)) = size;
         }
-        *((long long *)(result + 1 + 8)) = size; 
-        add_string_helper(value1, value2, result);
-        switch (to_free) {
-            case 1:
-                free(value1);
-                break;
-            case 2:
-                free(value2);
-                break;
-            case 3:
-                free(value1);
-                free(value2);
-                break;
+        else
+        {
+            result = allocate_string(size);
+            add_string_helper(value1, value2, result);
+            free(value1);
+            free(value2);
         }
         return result;
     }
