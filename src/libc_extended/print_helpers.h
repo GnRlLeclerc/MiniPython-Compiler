@@ -65,6 +65,22 @@ static inline void println_none()
     putchar('\n');
 }
 
+/** Wrapper for print inline adding quotes around strings in lists. */
+static inline void print_dynamic_list(void *value)
+{
+    char type = *((char *)value);
+    if (type == 3)
+    {
+        putchar('\'');
+        print_string(get_string_value(value));
+        putchar('\'');
+    }
+    else
+    {
+        print_dynamic(value);
+    }
+}
+
 /** Print a list without a newline. The full object must be passed */
 static inline void print_list(void *value)
 {
@@ -76,13 +92,13 @@ static inline void print_list(void *value)
     {
         for (int i = 0; i < size - 1; i++)
         {
-            print_dynamic(*((void **)(value + 1 + 8 + 8 + i * 8)));
+            print_dynamic_list(*((void **)(value + 1 + 8 + 8 + i * 8)));
             putchar(',');
             putchar(' ');
         }
 
         // Print the last element
-        print_dynamic(*((void **)(value + 1 + 8 + 8 + (size - 1) * 8)));
+        print_dynamic_list(*((void **)(value + 1 + 8 + 8 + (size - 1) * 8)));
     }
 
     putchar(']');
