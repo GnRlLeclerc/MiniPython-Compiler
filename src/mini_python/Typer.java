@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
+import java.util.Stack;
 
 import mini_python.exception_handling.CompilationException;
 import mini_python.exception_handling.exceptions.RangeExpectedException;
@@ -249,6 +250,55 @@ class Typer implements Visitor {
 		// Reuse or create the variable used to contain the assignment output
 		Variable v = this.getOrCreateVar(s.x.id);
 		v.type = this.currExpr.getType(); // Change the variable type to match the assignment
+
+		Stack<TExpr> toVisit = new Stack<>();
+		toVisit.push(this.currExpr);
+		TEident variableEIdent = null;
+		boolean onlyOne = true;
+		while (!toVisit.isEmpty()) {
+			TExpr e = toVisit.pop();
+			// switch according to type of TExpr
+			if (e instanceof TEident) {
+				TEident eident = (TEident) e;
+				if (eident.x.uid == v.uid && variableEIdent == null) {
+					variableEIdent = eident;
+					break;
+				} else if (eident.x.uid == v.uid) {
+					onlyOne = false;
+					break;
+				}
+				break;
+			} else if (e instanceof TEbinop) {
+				TEbinop ebinop = (TEbinop) e;
+				toVisit.push(ebinop.e1);
+				toVisit.push(ebinop.e2);
+			} else if (e instanceof TEunop) {
+				TEunop eunop = (TEunop) e;
+				toVisit.push(eunop.e);
+			} else if (e instanceof TEcall) {
+				TEcall ecall = (TEcall) e;
+				for (TExpr expr : ecall.l) {
+					toVisit.push(expr);
+				}
+			} else if (e instanceof TElist) {
+				TElist elist = (TElist) e;
+				for (TExpr expr : elist.l) {
+					toVisit.push(expr);
+				}
+			} else if (e instanceof TEget) {
+				TEget eget = (TEget) e;
+				toVisit.push(eget.e1);
+				toVisit.push(eget.e2);
+			} else if (e instanceof TErange) {
+				TErange erange = (TErange) e;
+				toVisit.push(erange.e);
+			}
+		}
+		if (variableEIdent != null && onlyOne) {
+			// cannot use temporary as a variable can point to a value referenced
+			// elsewhere
+			variableEIdent.reassignement = true;
+		}
 
 		this.currStmt = new TSassign(v, this.currExpr);
 	}

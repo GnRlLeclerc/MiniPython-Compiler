@@ -8,6 +8,9 @@ import mini_python.syntax.visitors.TVisitor;
  */
 public class TEident extends TExpr {
     public final Variable x;
+    // This variable access is used to set the same variable
+    // and this boolean can allow for more optimisation.
+    public boolean reassignement = false;
 
     public TEident(Variable x) {
         super(x.type, false);
