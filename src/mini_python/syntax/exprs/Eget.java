@@ -1,6 +1,7 @@
 package mini_python.syntax.exprs;
 
 import mini_python.exception_handling.CompilationException;
+import mini_python.syntax.Span;
 import mini_python.syntax.visitors.Visitor;
 
 /**
@@ -19,5 +20,10 @@ public class Eget extends Expr {
     @Override
     public void accept(Visitor v) throws CompilationException {
         v.visit(this);
+    }
+
+    @Override
+    public Span getSpan() {
+        return this.e1.getSpan(); // Just return the list identity
     }
 }

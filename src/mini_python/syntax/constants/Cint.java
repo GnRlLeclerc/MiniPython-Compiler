@@ -27,4 +27,9 @@ public class Cint extends Constant {
     public Type getType() {
         return Type.INT64;
     }
+
+    @Override
+    public int length() {
+        return String.valueOf(this.i).length();
+    }
 }

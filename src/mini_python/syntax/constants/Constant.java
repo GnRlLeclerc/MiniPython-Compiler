@@ -19,5 +19,8 @@ public abstract class Constant {
 
     abstract public void accept(TVisitor v);
 
+    /** Number of characters for a specific constant instance */
+    abstract public int length();
+
     public abstract Type getType();
 }

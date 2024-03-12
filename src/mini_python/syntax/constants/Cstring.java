@@ -29,4 +29,9 @@ public class Cstring extends Constant {
     public Type getType() {
         return Type.STRING;
     }
+
+    @Override
+    public int length() {
+        return this.s.length() + 2; // Add 2 for the quotes
+    }
 }

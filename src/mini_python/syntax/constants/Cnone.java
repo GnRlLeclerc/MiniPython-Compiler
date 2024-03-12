@@ -26,4 +26,9 @@ public class Cnone extends Constant {
         return Type.NONETYPE;
     }
 
+    @Override
+    public int length() {
+        return "None".length();
+    }
+
 }

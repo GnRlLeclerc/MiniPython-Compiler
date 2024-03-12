@@ -1,6 +1,5 @@
 package mini_python;
 
-import java.io.Serial;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -9,6 +8,7 @@ import java.util.Set;
 import java.util.Stack;
 
 import mini_python.exception_handling.CompilationException;
+import mini_python.exception_handling.Todo;
 import mini_python.exception_handling.exceptions.RangeExpectedException;
 import mini_python.exception_handling.exceptions.UndefinedIdentityException;
 import mini_python.exception_handling.exceptions.WrongArgCountException;
@@ -57,20 +57,6 @@ import mini_python.syntax.stmts_typed.TStmt;
 import mini_python.syntax.visitors.Visitor;
 import mini_python.typing.Type;
 
-// the following exception is used whenever you have to implement something
-class Todo extends Error {
-	@Serial
-	private static final long serialVersionUID = 1L;
-
-	Todo(String message) {
-		super("TODO: " + message);
-	}
-
-	Todo() {
-		super("TODO");
-	}
-}
-
 /* The typer starts here */
 class Typer implements Visitor {
 
@@ -117,19 +103,19 @@ class Typer implements Visitor {
 	}
 
 	public void visit(Cnone c) {
-		throw new Todo();
+		throw new Todo("Cnone");
 	}
 
 	public void visit(Cbool c) {
-		throw new Todo();
+		throw new Todo("Cbool");
 	}
 
 	public void visit(Cstring c) {
-		throw new Todo();
+		throw new Todo("Cstring");
 	}
 
 	public void visit(Cint c) {
-		throw new Todo();
+		throw new Todo("Cint");
 	}
 
 	@Override

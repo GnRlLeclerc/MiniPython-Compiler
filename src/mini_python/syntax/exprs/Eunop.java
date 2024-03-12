@@ -1,6 +1,7 @@
 package mini_python.syntax.exprs;
 
 import mini_python.exception_handling.CompilationException;
+import mini_python.syntax.Span;
 import mini_python.syntax.operations.Unop;
 import mini_python.syntax.visitors.Visitor;
 
@@ -20,6 +21,11 @@ public class Eunop extends Expr {
     @Override
     public void accept(Visitor v) throws CompilationException {
         v.visit(this);
+    }
+
+    @Override
+    public Span getSpan() {
+        return e.getSpan(); // Returning the main expression span is enough
     }
 
 }

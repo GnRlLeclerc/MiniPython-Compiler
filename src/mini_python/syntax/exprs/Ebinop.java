@@ -1,6 +1,7 @@
 package mini_python.syntax.exprs;
 
 import mini_python.exception_handling.CompilationException;
+import mini_python.syntax.Span;
 import mini_python.syntax.operations.Binop;
 import mini_python.syntax.visitors.Visitor;
 
@@ -21,5 +22,11 @@ public class Ebinop extends Expr {
     @Override
     public void accept(Visitor v) throws CompilationException {
         v.visit(this);
+    }
+
+    @Override
+    public Span getSpan() {
+        Span second = e2.getSpan();
+        return new Span(e1.getSpan().start, second.start.column + second.length);
     }
 }

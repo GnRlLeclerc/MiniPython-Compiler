@@ -27,4 +27,9 @@ public class Cbool extends Constant {
     public Type getType() {
         return Type.BOOL;
     }
+
+    @Override
+    public int length() {
+        return this.b ? "True".length() : "False".length();
+    }
 }

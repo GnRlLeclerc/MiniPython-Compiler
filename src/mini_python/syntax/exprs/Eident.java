@@ -2,6 +2,7 @@ package mini_python.syntax.exprs;
 
 import mini_python.exception_handling.CompilationException;
 import mini_python.syntax.Ident;
+import mini_python.syntax.Span;
 import mini_python.syntax.visitors.Visitor;
 
 /**
@@ -18,5 +19,10 @@ public class Eident extends Expr {
     @Override
     public void accept(Visitor v) throws CompilationException {
         v.visit(this);
+    }
+
+    @Override
+    public Span getSpan() {
+        return new Span(this.x.loc, this.x.id.length());
     }
 }
