@@ -137,3 +137,21 @@ make lexer
 ```bash
 make parser
 ```
+
+## Rust-Like error messages
+
+Our compiler implementation provides rust-like error messages for some basic cases.
+Invalid python codes can be found in the [`examples/`](./examples/) directory.
+
+Run the compiler on these scripts and observe the error messages !
+(Note: the compiler cannot handle errors on expressions or calls that span for more than one line).
+
+```bash
+./minipython examples/incompatible_types.py
+./minipython examples/invalid_unop.py
+./minipython examples/not_enough_args.py
+./minipython examples/range_expected.py
+./minipython examples/too_many_args.py
+./minipython examples/unknown_function.py
+./minipython examples/unknown_variable.py
+```
