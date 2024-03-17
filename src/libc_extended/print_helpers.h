@@ -1,7 +1,6 @@
 #pragma once
 
 #include "int_helpers.h"
-#include "string_list_helpers.h"
 #include "type_helpers.h"
 #include "types.h"
 #include <stdio.h>
@@ -74,10 +73,10 @@ static inline void println_none()
 static inline void print_dynamic_list(DYN_VALUE value)
 {
     char type = type_value(value);
-    if (type == 3)
+    if (type == STRING)
     {
         putchar('\'');
-        print_string(get_string_value(value));
+        print_string(value + 1 + 8 + 8 + 8);
         putchar('\'');
     }
     else
@@ -91,7 +90,7 @@ static inline void print_list(DYN_VALUE value)
 {
     putchar('[');
 
-    long size = get_size(value);
+    int64 size = *(int64 *)(value + 1 + 8);
 
     if (size != 0)
     {
@@ -133,7 +132,7 @@ inline void print_dynamic(DYN_VALUE value)
         print_int64(get_int_value(value)); // Offset type + ref_count
         break;
     case 3:
-        print_string(get_string_value(value)); // Offset type + ref_count + string length
+        print_string(value + 1 + 8 + 8 + 8); // Offset type + ref_count + string length
         break;
     case 4:
         print_list(value);

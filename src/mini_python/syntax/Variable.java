@@ -12,6 +12,8 @@ public class Variable {
     public Type type; // The type of a variable can be dynamically set, and can change on reassign.
     public int uid; // unique id, for debugging purposes
     public int ofs; // position wrt %rbp
+    public boolean initialized = false; // Whether the variable has been initialized, and the previous value must be
+                                        // collected or not.
 
     private Variable(String name, int uid, Type type, int offset) {
         this.name = name;

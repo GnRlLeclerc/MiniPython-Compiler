@@ -1,4 +1,5 @@
 #include "alloc_helpers.h"
+#include "garbage_collection.h"
 #include "int_helpers.h"
 #include "print_helpers.h"
 #include "string_list_helpers.h"
@@ -1295,4 +1296,35 @@ DYN_VALUE range_list(DYN_VALUE value)
     }
 
     return result;
+}
+
+/** Check and do garbage collection on a dynamic value if needed */
+void garbage_collect(DYN_VALUE value)
+{
+    // Get the refcount (always at the same position, for every type).
+    int64 references = *((int64 *)(value + 1));
+
+    if (references > 0)
+    {
+        return;
+    }
+
+    // Apply garbage collection
+    free_dyn_value(value);
+}
+
+/** Decrement a dynamic value's reference count, and garbage collect it */
+void decrement_and_collect(DYN_VALUE value)
+{
+    // Decrement the reference count
+    int64 references = *((int64 *)(value + 1)) -= 1;
+
+    // Garbage collect if needed
+    if (references > 0)
+    {
+        return;
+    }
+
+    // Apply garbage collection
+    free_dyn_value(value);
 }

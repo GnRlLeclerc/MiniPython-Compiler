@@ -2,7 +2,8 @@ package mini_python.libc;
 
 /**
  * Enum that holds the extended libc functions.
- * Every functions from the extended libc needs a 16-byte aligned stack before being called,
+ * Every functions from the extended libc needs a 16-byte aligned stack before
+ * being called,
  * because they might call other functions that require this alignment.
  */
 public enum ExtendedLibc {
@@ -27,8 +28,10 @@ public enum ExtendedLibc {
 	LEN_DYNAMIC("len_dynamic"),
 	TRUTHY_DYNAMIC("truthy_dynamic"),
 	SET_ELEMENT("set_element"),
+	GARBAGE_COLLECT("garbage_collect"),
+	DECREMENT_AND_COLLECT("decrement_and_collect"),
 	RANGE_LIST("range_list");
-	
+
 	private final String label;
 
 	ExtendedLibc(String label) {
