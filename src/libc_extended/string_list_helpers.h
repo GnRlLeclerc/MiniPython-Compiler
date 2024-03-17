@@ -1,57 +1,62 @@
-#include <string.h>
-#include "alloc_helpers.h"
-#include "type_helpers.h"
-#include "int_helpers.h"
+#pragma once
 
-#ifndef INCLUDE_STRING_HELPERS
-#define INCLUDE_STRING_HELPERS
+#include "alloc_helpers.h"
+#include "int_helpers.h"
+#include "type_helpers.h"
+#include "types.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 /** Get size of a dynamic value assumed to be a list or a string.*/
-static inline long long get_size(void *value)
+static inline int64 get_size(DYN_VALUE value)
 {
-    return *((long long *)(value + 1 + 8));
+    return *((int64 *)(value + 1 + 8)); // Type tag + refcount offset
 }
 
 /** Get capacity of a dynamic value assumed to be a string.*/
-static inline long long get_capacity(void *value)
+static inline int64 get_capacity(DYN_VALUE value)
 {
-    return *((long long *)(value + 1 + 8 + 8));
+    return *((int64 *)(value + 1 + 8 + 8));
 }
 
-static inline char *get_string_value(void *value)
+static inline char *get_string_value(DYN_VALUE value)
 {
     return (char *)(value + 1 + 8 + 8 + 8);
 }
 
-static inline void *add_string_helper(void *value1, void *value2, void *result)
+static inline DYN_VALUE add_string_helper(DYN_VALUE value1, DYN_VALUE value2, DYN_VALUE result)
 {
-    // Copy the first string
-    strcpy(get_string_value(result), get_string_value(value1));
+    // Copy the first string if we are not doing this in place
+    if (result != value1)
+    {
+        strcpy(get_string_value(result), get_string_value(value1));
+    }
+
     // Append the second string
     strcat(get_string_value(result), get_string_value(value2));
 
     return result;
 }
 
-static inline void *add_list_helper(void *value1, void *value2)
+static inline DYN_VALUE add_list_helper(DYN_VALUE value1, DYN_VALUE value2)
 {
-    long long size1 = get_size(value1);
-    long long size2 = get_size(value2);
-    long long size = size1 + size2;
-    void *result = allocate_list(size);
+    int64 size1 = get_size(value1);
+    int64 size2 = get_size(value2);
+    int64 size = size1 + size2;
+    DYN_VALUE result = allocate_list(size);
 
     // Copy the first list
-    for (long long i = 0; i < size1; i++)
+    for (int64 i = 0; i < size1; i++)
     {
-        *((void **)(result + 1 + 8 + 8 + i * 8)) = *((void **)(value1 + 1 + 8 + 8 + i * 8));
-        *((long long *)(*((void **)(result + 1 + 8 + 8 + i * 8)) + 1)) += 1;
+        *((DYN_ARRAY)(result + 1 + 8 + 8 + i * 8)) = *((DYN_ARRAY)(value1 + 1 + 8 + 8 + i * 8));
+        *((int64 *)(*((DYN_ARRAY)(result + 1 + 8 + 8 + i * 8)) + 1)) += 1;
     }
 
     // Copy the second list
-    for (long long i = 0; i < size2; i++)
+    for (int64 i = 0; i < size2; i++)
     {
-        *((void **)(result + 1 + 8 + 8 + (*((long long *)(value1 + 1 + 8)) + i) * 8)) = *((void **)(value2 + 1 + 8 + 8 + i * 8));
-        *((long long *)(*((void **)(result + 1 + 8 + 8 + (*((long long *)(value1 + 1 + 8)) + i) * 8)) + 1)) += 1;
+        *((DYN_ARRAY)(result + 1 + 8 + 8 + (*((int64 *)(value1 + 1 + 8)) + i) * 8)) = *((DYN_ARRAY)(value2 + 1 + 8 + 8 + i * 8));
+        *((int64 *)(*((DYN_ARRAY)(result + 1 + 8 + 8 + (*((int64 *)(value1 + 1 + 8)) + i) * 8)) + 1)) += 1;
     }
 
     return result;
@@ -60,7 +65,7 @@ static inline void *add_list_helper(void *value1, void *value2)
 /** Computes the list address corresponding to the index.
  * Does the type and boundary checks
  */
-static inline void **list_index(void *list, void *index)
+static inline DYN_ARRAY list_index(DYN_ARRAY list, DYN_VALUE index)
 {
     // 1. Check that the index has the right type
     if (type_value(index) != INT64 && type_value(index) != BOOL)
@@ -70,8 +75,8 @@ static inline void **list_index(void *list, void *index)
     }
 
     // 2. Check that the index is within the list bounds
-    long long list_size = *((long long *)(list + 1 + 8));
-    long long index_value = *((long long *)(index + 1 + 8));
+    int64 list_size = *((int64 *)(list + 1 + 8));
+    int64 index_value = get_int_value(index);
 
     if (index_value < 0 || index_value >= list_size)
     {
@@ -82,38 +87,45 @@ static inline void **list_index(void *list, void *index)
     return list + 1 + 8 + 8 + index_value * 8;
 }
 
-static inline void mul_string_int_helper(void *value1, void *value2, void *result)
+static inline void mul_string_int_helper(DYN_VALUE value1, DYN_VALUE value2, DYN_VALUE result)
 {
-    long long value2_int = get_int_value(value2);
+    int64 value2_int = get_int_value(value2);
     if (value2_int > 0)
     {
-        void *value1_string = get_string_value(value1);
-        void *result_string = get_string_value(result);
+        char *value1_string = get_string_value(value1);
+        char *result_string = get_string_value(result);
 
         // Copy the first string
         strcpy(result_string, value1_string);
 
-        for (long long i = 1; i < value2_int; i++)
+        for (int64 i = 1; i < value2_int; i++)
         {
             strcat(result_string, value1_string);
         }
     }
+
+    // If the second value is 0, the result is an empty string
+    else
+    {
+        set_int_value(result, 0);
+        *((char *)(result + 1 + 8 + 8 + 8)) = '\0'; // Null-terminated string
+    }
 }
 
-static inline void *mul_list_int_helper(void *value1, void *value2)
+static inline DYN_VALUE mul_list_int_helper(DYN_VALUE value1, DYN_VALUE value2)
 {
-    void *result;
-    if (*((long long *)(value2 + 1 + 8)) > 0)
+    DYN_VALUE result;
+    if (get_int_value(value2) > 0)
     {
-        long long size = *((long long *)(value1 + 1 + 8)) * *((long long *)(value2 + 1 + 8));
+        int64 size = get_int_value(value1) * get_int_value(value2);
         result = allocate_list(size);
 
-        for (long long i = 0; i < *((long long *)(value2 + 1 + 8)); i++)
+        for (int64 i = 0; i < get_int_value(value2); i++)
         {
-            for (long long j = 0; j < *((long long *)(value1 + 1 + 8)); j++)
+            for (int64 j = 0; j < *((int64 *)(value1 + 1 + 8)); j++)
             {
-                *((void **)(result + 1 + 8 + 8 + i * *((long long *)(value1 + 1 + 8)) * 8 + j * 8)) = *((void **)(value1 + 1 + 8 + 8 + j * 8));
-                *((long long *)(*((void **)(result + 1 + 8 + 8 + i * *((long long *)(value1 + 1 + 8)) * 8 + j * 8)) + 1)) += 1;
+                *((DYN_ARRAY)(result + 1 + 8 + 8 + i * get_int_value(value1) * 8 + j * 8)) = *((DYN_ARRAY)(value1 + 1 + 8 + 8 + j * 8));
+                *((int64 *)(*((DYN_ARRAY)(result + 1 + 8 + 8 + i * get_int_value(value1) * 8 + j * 8)) + 1)) += 1;
             }
         }
     }
@@ -123,5 +135,3 @@ static inline void *mul_list_int_helper(void *value1, void *value2)
     }
     return result;
 }
-
-#endif

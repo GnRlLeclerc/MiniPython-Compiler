@@ -1,3 +1,11 @@
+/** Define type constants.
+ *
+ * We also use (tag1 << 3 + tag2) values to represent type combinations using 1 byte,
+ * in order to be able to use switch statements for efficient type combination processing.
+ */
+
+#pragma once
+
 #define NONETYPE 0
 #define BOOL 1
 #define INT64 2
@@ -16,3 +24,9 @@
 #define STRING_STRING 27
 #define LIST_LIST 36
 #define LIST_INT64 34
+
+// Type alias for our dynamic type values
+// They technically are *char as byte arrays.
+#define DYN_VALUE char *
+#define DYN_ARRAY char **
+#define int64 long long

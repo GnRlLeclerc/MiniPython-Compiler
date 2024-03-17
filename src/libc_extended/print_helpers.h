@@ -1,13 +1,18 @@
+#pragma once
+
+#include "int_helpers.h"
+#include "string_list_helpers.h"
+#include "type_helpers.h"
+#include "types.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "string_list_helpers.h"
 
 // Forward declaration to allow println_list to call println_dynamic
-void print_dynamic(void *);
+void print_dynamic(DYN_VALUE);
 
 /** Print a bool without newline */
-static inline void print_bool(long long value)
+static inline void print_bool(int64 value)
 {
     if (value == 0)
     {
@@ -20,20 +25,20 @@ static inline void print_bool(long long value)
 }
 
 /** Print the input value (int64 representation of a boolean) in Python boolean format */
-static inline void println_bool(long long value)
+static inline void println_bool(int64 value)
 {
     print_bool(value);
     putchar('\n');
 }
 
 /** Print an integer value without newline */
-static inline void print_int64(long long value)
+static inline void print_int64(int64 value)
 {
     printf("%lld", value);
 }
 
 /** Print an integer value */
-static inline void println_int64(long long value)
+static inline void println_int64(int64 value)
 {
     print_int64(value);
     putchar('\n');
@@ -66,9 +71,9 @@ static inline void println_none()
 }
 
 /** Wrapper for print inline adding quotes around strings in lists. */
-static inline void print_dynamic_list(void *value)
+static inline void print_dynamic_list(DYN_VALUE value)
 {
-    char type = *((char *)value);
+    char type = type_value(value);
     if (type == 3)
     {
         putchar('\'');
@@ -82,30 +87,30 @@ static inline void print_dynamic_list(void *value)
 }
 
 /** Print a list without a newline. The full object must be passed */
-static inline void print_list(void *value)
+static inline void print_list(DYN_VALUE value)
 {
     putchar('[');
 
-    long size = *((long long *)(value + 1 + 8)); // Offset type + ref_count
+    long size = get_size(value);
 
     if (size != 0)
     {
         for (int i = 0; i < size - 1; i++)
         {
-            print_dynamic_list(*((void **)(value + 1 + 8 + 8 + i * 8)));
+            print_dynamic_list(*((DYN_ARRAY)(value + 1 + 8 + 8 + i * 8)));
             putchar(',');
             putchar(' ');
         }
 
         // Print the last element
-        print_dynamic_list(*((void **)(value + 1 + 8 + 8 + (size - 1) * 8)));
+        print_dynamic_list(*((DYN_ARRAY)(value + 1 + 8 + 8 + (size - 1) * 8)));
     }
 
     putchar(']');
 }
 
 /** Print a list. The full object must be passed */
-static inline void println_list(void *value)
+static inline void println_list(DYN_VALUE value)
 {
     print_list(value);
     putchar('\n');
@@ -113,19 +118,19 @@ static inline void println_list(void *value)
 
 /** Print a dynamic value without a newline. This function reads the 1st byte of the value and decides how to print it.
  */
-inline void print_dynamic(void *value)
+inline void print_dynamic(DYN_VALUE value)
 {
-    char type = *((char *)value);
+    char type = type_value(value);
     switch (type)
     {
     case 0:
         print_none();
         break;
     case 1:
-        print_bool(*((long long *)(value + 1 + 8))); // Offset type + ref_count
+        print_bool(get_int_value(value)); // Offset type + ref_count
         break;
     case 2:
-        print_int64(*((long long *)(value + 1 + 8))); // Offset type + ref_count
+        print_int64(get_int_value(value)); // Offset type + ref_count
         break;
     case 3:
         print_string(get_string_value(value)); // Offset type + ref_count + string length

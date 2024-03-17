@@ -1,34 +1,37 @@
-#ifndef INCLUDE_INT_HELPERS
-#define INCLUDE_INT_HELPERS
+#pragma once
+
+#include "types.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 /** Get the integer value of a dynamic value that is assumed to be an integer.*/
-static inline long long get_int_value(void *value)
+static inline int64 get_int_value(DYN_VALUE value)
 {
-    return *((long long *)(value + 1 + 8));
+    return *((int64 *)(value + 1 + 8)); // Type tag + refcount offset
 }
 
 /** Set the integer value of a dynamic value that is assumed to be an integer..*/
-static inline void set_int_value(void *value, int new_value)
+static inline void set_int_value(DYN_VALUE value, int new_value)
 {
-    *((long long *)(value + 1 + 8)) = new_value;
+    *((int64 *)(value + 1 + 8)) = new_value;
 }
 
-static inline void *add_int_helper(void *value1, void *value2, void *result)
+static inline void add_int_helper(DYN_VALUE value1, DYN_VALUE value2, DYN_VALUE result)
 {
     set_int_value(result, get_int_value(value1) + get_int_value(value2));
 }
 
-static inline void *sub_int_helper(void *value1, void *value2, void *result)
+static inline void sub_int_helper(DYN_VALUE value1, DYN_VALUE value2, DYN_VALUE result)
 {
     set_int_value(result, get_int_value(value1) - get_int_value(value2));
 }
 
-static inline void *mul_int_helper(void *value1, void *value2, void *result)
+static inline void mul_int_helper(DYN_VALUE value1, DYN_VALUE value2, DYN_VALUE result)
 {
     set_int_value(result, get_int_value(value1) * get_int_value(value2));
 }
 
-static inline void *div_int_helper(void *value1, void *value2, void *result)
+static inline void div_int_helper(DYN_VALUE value1, DYN_VALUE value2, DYN_VALUE result)
 {
     if (get_int_value(value2) == 0)
     {
@@ -38,7 +41,7 @@ static inline void *div_int_helper(void *value1, void *value2, void *result)
     set_int_value(result, get_int_value(value1) / get_int_value(value2));
 }
 
-static inline void *mod_int_helper(void *value1, void *value2, void *result)
+static inline void mod_int_helper(DYN_VALUE value1, DYN_VALUE value2, DYN_VALUE result)
 {
     if (get_int_value(value2) == 0)
     {
@@ -47,5 +50,3 @@ static inline void *mod_int_helper(void *value1, void *value2, void *result)
     }
     set_int_value(result, get_int_value(value1) % get_int_value(value2));
 }
-
-#endif
