@@ -159,7 +159,7 @@ static inline int is_lt(DYN_VALUE value1, DYN_VALUE value2)
 }
 
 /** Set list[index] = value, with arguments all being dynamic */
-void set_element(DYN_ARRAY list, DYN_VALUE index, DYN_VALUE value)
+void set_element(DYN_VALUE list, DYN_VALUE index, DYN_VALUE value)
 {
     // 1. Get the list index
     DYN_ARRAY index_ptr = list_index(list, index);
@@ -175,7 +175,7 @@ void set_element(DYN_ARRAY list, DYN_VALUE index, DYN_VALUE value)
 }
 
 /** Get a list element and return it */
-DYN_VALUE get_element(DYN_ARRAY list, DYN_VALUE index)
+DYN_VALUE get_element(DYN_VALUE list, DYN_VALUE index)
 {
     return *list_index(list, index);
 }

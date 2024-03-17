@@ -1,7 +1,9 @@
 #pragma once
 
 #include "alloc_helpers.h"
+#include "debug.h"
 #include "int_helpers.h"
+#include "print_helpers.h"
 #include "type_helpers.h"
 #include "types.h"
 #include <stdio.h>
@@ -65,7 +67,7 @@ static inline DYN_VALUE add_list_helper(DYN_VALUE value1, DYN_VALUE value2)
 /** Computes the list address corresponding to the index.
  * Does the type and boundary checks
  */
-static inline DYN_ARRAY list_index(DYN_ARRAY list, DYN_VALUE index)
+static inline DYN_ARRAY list_index(DYN_VALUE list, DYN_VALUE index)
 {
     // 1. Check that the index has the right type
     if (type_value(index) != INT64 && type_value(index) != BOOL)
@@ -75,7 +77,7 @@ static inline DYN_ARRAY list_index(DYN_ARRAY list, DYN_VALUE index)
     }
 
     // 2. Check that the index is within the list bounds
-    int64 list_size = *((int64 *)(list + 1 + 8));
+    int64 list_size = get_size(list);
     int64 index_value = get_int_value(index);
 
     if (index_value < 0 || index_value >= list_size)
@@ -84,7 +86,7 @@ static inline DYN_ARRAY list_index(DYN_ARRAY list, DYN_VALUE index)
         exit(1);
     }
 
-    return list + 1 + 8 + 8 + index_value * 8;
+    return (DYN_ARRAY)((list + 1 + 8 + 8) + index_value * 8);
 }
 
 static inline void mul_string_int_helper(DYN_VALUE value1, DYN_VALUE value2, DYN_VALUE result)
