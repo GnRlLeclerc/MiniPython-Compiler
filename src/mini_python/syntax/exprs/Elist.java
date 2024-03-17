@@ -3,7 +3,7 @@ package mini_python.syntax.exprs;
 import java.util.LinkedList;
 
 import mini_python.exception_handling.CompilationException;
-import mini_python.exception_handling.Todo;
+import mini_python.syntax.Location;
 import mini_python.syntax.Span;
 import mini_python.syntax.visitors.Visitor;
 
@@ -25,6 +25,15 @@ public class Elist extends Expr {
 
     @Override
     public Span buildSpan() {
-        throw new Todo("Elist.getSpan");
+
+        if (l.isEmpty()) {
+            return new Span(new Location(0, 0), 0);
+        }
+
+        Span first = l.getFirst().getSpan();
+        Span last = l.getLast().getSpan();
+
+        int length = last.start.column - first.start.column + last.length;
+        return new Span(first.start, length);
     }
 }

@@ -20,7 +20,7 @@ public class CompilationExceptionHandler {
     public void handle(Exception e) {
         if (!(e instanceof CompilationException)) {
             System.out.println("Unknown exception:");
-            System.out.println(filepath.getFileName() + ":" + e.getMessage());
+            System.out.println(filepath.getFileName() + ":" + e.toString());
             System.exit(1);
         }
 
